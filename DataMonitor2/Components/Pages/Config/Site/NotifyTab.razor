@@ -1,23 +1,66 @@
-﻿@using Syncfusion.Blazor.Buttons
-@page "/Config/Site"
+﻿@using Syncfusion.Blazor.Notifications
+@using Models
 @inject ILogger<NotifyTab> Logger
+@inject ILineNotify LineNotify
 @rendermode InteractiveServer
 
+
 <PageTitle>@Title</PageTitle>
-<div class="row mb-4">
-    <div class="col-md-1">
-        <p role="status">Current count: @currentCount</p>
-        <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+
+<EditForm Model="@_model">
+    <SfToast ID="toast_default" @ref="ToastObj" Timeout="0" Icon="e-meeting">
+        <ToastPosition X="Center"></ToastPosition>
+    </SfToast>
+    <div class="row mb-4">
+        <label class="col-md-2 col-form-label" for="Name">LINE Token</label>
+        <div class="col-md-5">
+            <InputText Id="Name" readonly class="form-control" @bind-Value="_model.LineToken"/>
+        </div>
+        <div class="col-md-1">
+            <button type="button" class="btn btn-info" @onclick="TestLine">測試</button>
+        </div>
     </div>
-</div>
+</EditForm>
 
 @code {
     private const string Title = "LINE 通報";
-    private int currentCount = 0;
-
-    private void IncrementCount()
-    {
-        currentCount++;
-    }
     
+    private class Model
+    {
+        public string LineToken { get; set; } = string.Empty;
+    }
+
+    private Model _model = new();
+    private SfToast ToastObj;
+    private string ToastPosition = "Center";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        _model.LineToken = LineNotify.GetToken();
+    }
+
+    private async Task TestLine()
+    {
+        Logger.LogInformation("TestLine called: Testing the line token");
+        try
+        {
+            await LineNotify.Notify("發送測試訊息");
+            await ToastObj.ShowAsync(new ToastModel
+            {
+                CssClass = "e-toast-success",
+                Content = "LINE 測試成功"
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "TestLine: Failed to send test message");
+            await ToastObj.ShowAsync(new ToastModel
+            {
+                CssClass = "e-toast-danger",
+                Content = "測試失敗"
+            });
+        }
+    }
+
 }

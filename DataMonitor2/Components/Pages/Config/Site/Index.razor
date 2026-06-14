@@ -1,0 +1,25 @@
+﻿@page "/Config/Site"
+@using Syncfusion.Blazor.Navigations
+
+<SfTab>
+    <TabAnimationSettings>
+        <TabAnimationPrevious Effect=AnimationEffect.FadeZoomIn></TabAnimationPrevious>
+        <TabAnimationNext Effect=AnimationEffect.FadeZoomIn></TabAnimationNext>
+    </TabAnimationSettings>
+    <TabItems>
+        <TabItem>
+            <ChildContent>
+                <TabHeader Text="LINE通報" IconCss="e-icons e-location"></TabHeader>
+            </ChildContent>
+            <ContentTemplate>
+                <div class="m-3">
+                    <NotifyTab></NotifyTab>
+                </div>
+            </ContentTemplate>
+        </TabItem>
+    </TabItems>
+</SfTab>
+
+@code {
+    
+}
