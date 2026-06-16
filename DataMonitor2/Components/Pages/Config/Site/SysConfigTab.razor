@@ -1,0 +1,80 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using DataMonitor2.Db
+@using Syncfusion.Blazor.Notifications
+@inject SysConfigIo SysConfigIo
+@inject ILogger<SysConfigTab> Logger
+@rendermode InteractiveServer
+
+<PageTitle>@Title</PageTitle>
+<SfToast ID="toast_default" @ref="ToastObj"
+         Title="通知" Timeout="1000" Icon="e-meeting">
+    <ToastPosition X="Center" Y="Top"></ToastPosition>
+</SfToast>
+<EditForm Model="@_model" OnValidSubmit="OnValidSubmit" class="w-75">
+    <DataAnnotationsValidator/>
+    <ValidationSummary/>
+    <div class="row mb-3">
+        <label class="col-md-2 col-form-label" for="Name">Email:</label>
+        <div class="col-md-5">
+            <InputText Id="Name" class="form-control" @bind-Value="_model!.Email"/>
+            <ValidationMessage For="@(() => _model!.Email)"/>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <label class="col-md-2 col-form-label" for="Name">簡訊電話號碼:</label>
+        <div class="col-md-5">
+            <InputText Id="SiteCode" class="form-control" @bind-Value="_model!.PhoneNo"/>
+            <ValidationMessage For="@(() => _model!.PhoneNo)"/>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="offset-md-1">
+            <button type="submit" class="btn btn-success">更新</button>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    private const string Title = "通訊參數";
+
+    SfToast? ToastObj { get; set; }
+
+    public class SiteInfoModel
+    {
+        [Required(ErrorMessage = "Email不能是空的")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "電話不能是空的")] public string PhoneNo { get; set; } = string.Empty;
+    }
+
+    private SiteInfoModel? _model;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        _model = new SiteInfoModel
+        {
+            Email = await SysConfigIo.GetEmailReceipt(),
+            PhoneNo = await SysConfigIo.GetPhoneNo()
+        };
+    }
+
+    private async Task OnValidSubmit()
+    {
+        Logger.LogInformation("Submit called: Processing the form");
+        if (_model != null)
+        {
+            await SysConfigIo.SetEmailReceipt(_model.Email);
+            await SysConfigIo.SetPhoneNo(_model.PhoneNo);
+        }
+
+        if (ToastObj != null)
+            await ToastObj.ShowAsync(new ToastModel
+            {
+                CssClass = "e-toast-success",
+                Content = "更新成功"
+            });
+    }
+
+}

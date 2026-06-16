@@ -1,10 +1,14 @@
-﻿namespace DataMonitor2.Models
+﻿using DataMonitor2.Db;
+
+namespace DataMonitor2.Models
 {
     internal sealed class DataMonitor(
         ILogger<DataMonitor> logger,
+        MonitorTypeIo monitorTypeIo,
         IHostEnvironment env) : IHostedService
     {
         private readonly ILogger _logger = logger;
+        private readonly MonitorTypeIo _monitorTypeI = monitorTypeIo;
         private readonly IHostEnvironment _env = env;
 
         private void MonitorTask(bool param1)
@@ -23,6 +27,9 @@
         {
             try
             {
+                // Init
+                monitorTypeIo.Init().Wait(cancellationToken);
+                
                 try
                 {
                     // Helper function

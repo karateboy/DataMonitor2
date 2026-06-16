@@ -30,6 +30,7 @@ var localizationOptions = new RequestLocalizationOptions()
 
 builder.Services.AddSingleton<ISqlServer, SqlServer>();
 builder.Services.AddSingleton<SysConfigIo>();
+builder.Services.AddSingleton<MonitorTypeIo>();
 builder.Services.AddHttpClient<ILineNotify, LineNotify>();
 builder.Services.AddHostedService<DataMonitor>();
 

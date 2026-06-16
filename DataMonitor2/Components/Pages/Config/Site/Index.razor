@@ -1,5 +1,6 @@
 ﻿@page "/Config/Site"
 @using Syncfusion.Blazor.Navigations
+@rendermode InteractiveServer
 
 <SfTab>
     <TabAnimationSettings>
@@ -14,6 +15,16 @@
             <ContentTemplate>
                 <div class="m-3">
                     <NotifyTab></NotifyTab>
+                </div>
+            </ContentTemplate>
+        </TabItem>
+        <TabItem>
+            <ChildContent>
+                <TabHeader Text="其他通訊" IconCss="e-icons e-location"></TabHeader>
+            </ChildContent>
+            <ContentTemplate>
+                <div class="m-3">
+                    <SysConfigTab></SysConfigTab>
                 </div>
             </ContentTemplate>
         </TabItem>

@@ -1,0 +1,43 @@
+﻿@page "/AlarmRuleConfig"
+@using DataMonitor2.Db
+@using Syncfusion.Blazor.Grids
+@using Models
+@inject ILogger<AlarmRuleConfig> Logger
+@inject SysConfigIo SysConfigIo
+@inject MonitorTypeIo MonitorTypeIo
+@rendermode InteractiveServer
+<PageTitle>@Title</PageTitle>
+<SfGrid @ref="Grid" DataSource="@rules" Toolbar="@(new List<string> { "Edit", "Update", "Cancel" })"
+        ShowColumnMenu="true"
+        AllowPaging="false" AllowSorting="true" AllowResizing="true">
+    <GridEditSettings Mode="EditMode.Normal" AllowAdding="false" AllowDeleting="false" AllowEditing="true">
+    </GridEditSettings>
+    <GridColumn Field="Item"
+                HeaderText="測項"
+                TextAlign="TextAlign.Left"
+                IsPrimaryKey="true"
+                IsIdentity="true"
+                AutoFit="true"
+                AllowEditing="false"
+                Visible="true">
+        
+    </GridColumn>
+</SfGrid>
+
+@code {
+    private const string Title = "警報規則設定";
+
+    private SfGrid<MonitorTypeRule> Grid;
+    List<MonitorTypeRule> rules = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var ret = await SysConfigIo.GetAMinAlarmRule();
+        var _alarmRule = ret ?? AMinAlarmRule.DefaultRule;
+        rules = _alarmRule.Rules;
+        foreach (var rule in rules)
+            Logger.LogInformation(rule.ToString());
+    }
+    
+
+}

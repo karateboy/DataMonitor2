@@ -1,5 +1,7 @@
 ﻿using System.Globalization;
+using System.Text.Json;
 using Dapper;
+using DataMonitor2.Models;
 using Microsoft.Data.SqlClient;
 
 namespace DataMonitor2.Db;
@@ -15,9 +17,6 @@ public class SysConfigIo
         _logger = logger;
     }
 
-    public const string UploadPathKey = "UploadPath";
-    private const string TestUploadKey = "TestUpload";
-    private const string LawUploadTimeKey = "LawUploadTime";
     
     public interface ISysConfig
     {
@@ -51,14 +50,14 @@ public class SysConfigIo
         }
     }
 
-    public async Task<string> GetSysConfig(string configKey)
+    public async Task<string> GetSysConfig(string configKey, string defaultValue = "")
     {
         try
         {
             await using var connection = new SqlConnection(_sqlServer.ConnectionString);
             var ret = connection.QueryFirstOrDefault<string>("SELECT Value  FROM [dbo].[SysConfig] WHERE ConfigKey = @ConfigKey",
                 new { ConfigKey = configKey });
-            return ret ?? "";
+            return ret ?? defaultValue;
         }catch(Exception e)
         {
             _logger.LogError(e, "GetSysConfig {ConfigKey}", configKey);
@@ -71,69 +70,42 @@ public class SysConfigIo
         var ret = await GetSysConfig(configKey);
         return string.IsNullOrEmpty(ret) || bool.Parse(ret);
     }
-    
-    public async Task<string> GetUploadPath()
+    private const string EmailReceiptKey = "EmailReceiptKey";
+    public Task SetEmailReceipt(string email)
     {
-        return await GetSysConfig(UploadPathKey);
+        return UpsertSysConfig(
+            new SysConfig(EmailReceiptKey, email));
     }
     
-    public Task SetUploadPath(string path)
+    public Task<string> GetEmailReceipt()
     {
-        return UpsertSysConfig(new SysConfig(UploadPathKey, path));
+        return GetSysConfig(EmailReceiptKey);
     }
     
-    public Task<bool> GetTestUpload()
+    private const string PhoneNoKey = "PhoneNoKey";
+    public Task SetPhoneNo(string email)
     {
-        return GetSysConfigBool(TestUploadKey);
+        return UpsertSysConfig(
+            new SysConfig(PhoneNoKey, email));
     }
     
-    public Task SetTestUpload(bool testUpload)
+    public Task<string> GetPhoneNo()
     {
-        return UpsertSysConfig(new SysConfig(TestUploadKey, testUpload.ToString()));
+        return GetSysConfig(PhoneNoKey);
     }
     
-    public Task SetLawUploadTime(TimeOnly lawUploadTime)
+    private const string AMinAlarmRuleKey = "AMinAlarmRuleKey";
+    public Task SetAMinAlarmRule(AlarmRule rule)
     {
-        return UpsertSysConfig(new SysConfig(LawUploadTimeKey, lawUploadTime.ToString("hh\\:mm\\:ss")));
+        return UpsertSysConfig(
+            new SysConfig(AMinAlarmRuleKey, JsonSerializer.Serialize(rule)));
     }
     
-    public Task<TimeOnly> GetLawUploadTime()
+    public Task<AlarmRule?> GetAMinAlarmRule()
     {
-        return GetSysConfig(LawUploadTimeKey).ContinueWith(t =>
-        {
-            try
-            {
-                return string.IsNullOrEmpty(t.Result)
-                    ? new TimeOnly(9, 0, 0)
-                    : TimeOnly.ParseExact(t.Result, "hh\\:mm\\:ss", CultureInfo.InvariantCulture);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "GetLawUploadTime");
-                return new TimeOnly(9, 0, 0);
-            }
-        });
-    }
-    
-    private const string LoadDataPathKey = "LoadDataPath";
-    public Task SetLoadDataPath(string path)
-    {
-        return UpsertSysConfig(new SysConfig(LoadDataPathKey, path));
-    }
-    
-    public Task<string> GetLoadDataPath()
-    {
-        return GetSysConfig(LoadDataPathKey);
-    }
-    
-    private const string ModbusDataPathKey = "ModbusDataPath";
-    public Task SetModbusDataPath(string path)
-    {
-        return UpsertSysConfig(new SysConfig(ModbusDataPathKey, path));
-    }
-    public Task<string> GetModbusDataPath()
-    {
-        return GetSysConfig(ModbusDataPathKey);
+        var defaultJson = JsonSerializer.Serialize(AMinAlarmRule.DefaultRule);
+        return GetSysConfig(AMinAlarmRuleKey, defaultJson)
+            .ContinueWith(ret=>JsonSerializer.Deserialize<AlarmRule>(ret.Result));
     }
     
 }
