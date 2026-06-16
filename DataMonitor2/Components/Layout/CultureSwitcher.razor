@@ -31,20 +31,8 @@
         await base.OnInitializedAsync();
         switch (System.Globalization.CultureInfo.CurrentCulture.Name)
         {
-            case "en-US":
-                this.cultureIndex = 0;
-                break;
-            case "de":
-                this.cultureIndex = 1;
-                break;
-            case "fr":
-                this.cultureIndex = 2;
-                break;
-            case "ar":
-                this.cultureIndex = 3;
-                break;
             case "zh":
-                this.cultureIndex = 4;
+                this.cultureIndex = 0;
                 break;
         }
     }
@@ -58,20 +46,8 @@
                     $"redirectUri={Uri.EscapeDataString(uri)}";
         switch (culture)
         {
-            case "en-US":
-                this.cultureIndex = 0;
-                break;
-            case "de":
-                this.cultureIndex = 1;
-                break;
-            case "fr":
-                this.cultureIndex = 2;
-                break;
-            case "ar":
-                this.cultureIndex = 3;
-                break;
             case "zh":
-                this.cultureIndex = 4;
+                this.cultureIndex = 0;
                 break;
         }
 

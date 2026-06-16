@@ -1,0 +1,87 @@
+﻿@using DataMonitor2.Db
+@using Syncfusion.Blazor.Grids
+@using Action = Syncfusion.Blazor.Grids.Action
+@using Models
+@inject ILogger<AMinAlarmRuleConfig> Logger
+@inject SysConfigIo SysConfigIo
+@inject MonitorTypeIo MonitorTypeIo
+@rendermode InteractiveServer
+
+<PageTitle>@Title</PageTitle>
+<h3>監測測站: @MonitorNames</h3>
+<SfGrid @ref="Grid" DataSource="@_alarmRule.Rules" Toolbar="@(new List<string> { "Edit", "Update", "Cancel" })"
+        ShowColumnMenu="true"
+        AllowPaging="false" AllowSorting="true" AllowResizing="true">
+    <GridEditSettings Mode="EditMode.Normal" AllowAdding="false" AllowDeleting="false" AllowEditing="true"></GridEditSettings>
+    <GridColumns>
+        <GridColumn Field="@nameof(MonitorTypeRule.Item)"
+                    HeaderText="測項"
+                    TextAlign="TextAlign.Left"
+                    IsPrimaryKey="true"
+                    IsIdentity="true"
+                    AllowEditing="false"
+                    Width="15"
+                    Visible="true">
+            <Template>
+                @if (context is MonitorTypeRule rule)
+                {
+                    var mtItem = MonitorTypeIo.MapReadOnly[rule.Item]; 
+                    <strong>@mtItem.Desp.Trim()</strong>
+                }
+            </Template>
+            <EditTemplate>
+                @if (context is MonitorTypeRule rule)
+                {
+                    var mtItem = MonitorTypeIo.MapReadOnly[rule.Item]; 
+                    <strong>@mtItem.Desp.Trim()</strong>
+                }
+            </EditTemplate>
+        </GridColumn>
+        <GridColumn Field="@nameof(MonitorTypeRule.AlarmLow)"
+                    HeaderText="低值警報"
+                    TextAlign="TextAlign.Left"
+                    Width="15"
+                    AllowEditing="true"
+                    Visible="true"> </GridColumn>
+        <GridColumn Field="@nameof(MonitorTypeRule.AlarmHigh)"
+                    HeaderText="高值警報"
+                    TextAlign="TextAlign.Left"
+                    AllowEditing="true"
+                    Width="15"
+                    Visible="true"> </GridColumn>
+        <GridColumn Field="@nameof(MonitorTypeRule.AlarmHighHigh)"
+                    HeaderText="超高值警報"
+                    TextAlign="TextAlign.Left"
+                    AllowEditing="true"
+                    Width="15"
+                    Visible="true"> </GridColumn>
+    </GridColumns>
+    <GridEvents OnActionComplete="OnActionComplete" TValue="MonitorTypeRule"></GridEvents>
+</SfGrid>
+
+
+@code {
+    private const string Title = "S資料表";
+
+    private SfGrid<MonitorTypeRule> Grid;
+    AlarmRule _alarmRule = SHourAlarmRule.DefaultRule;
+    string MonitorNames => string.Join(",", _alarmRule.Monitors);
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        var ret = await SysConfigIo.GetSHourAlarmRule();
+        _alarmRule = ret ?? SHourAlarmRule.DefaultRule;
+    }
+
+    private async void OnActionComplete(ActionEventArgs<MonitorTypeRule> args)
+    {
+        if (args.RequestType != Action.Save) 
+            return;
+
+        var updatedRule = _alarmRule.Rules.Find(rule => rule?.Item == args.Data?.Item);
+        if (updatedRule is null || args.Data is null) return;
+        var index = _alarmRule.Rules.IndexOf(updatedRule);
+        _alarmRule.Rules[index] = args.Data;
+        await SysConfigIo.SetSHourAlarmRule(_alarmRule);
+    }
+}

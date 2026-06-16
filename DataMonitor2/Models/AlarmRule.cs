@@ -1,10 +1,13 @@
 ﻿namespace DataMonitor2.Models;
 
-public record MonitorTypeRule(
-    string Item,
-    double? LAlarm = null,
-    double? HAlarm = null,
-    double? HhAlarm = null);
+public class MonitorTypeRule(string item)
+{
+    public string Item {get; set;} = item;
+    public double? AlarmLow {get; set;}
+    public double? AlarmHigh {get; set;}
+    public double? AlarmHighHigh {get; set;}
+}
+
 
 public class AlarmRule
 {

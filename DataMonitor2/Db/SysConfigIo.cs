@@ -108,4 +108,45 @@ public class SysConfigIo
             .ContinueWith(ret=>JsonSerializer.Deserialize<AlarmRule>(ret.Result));
     }
     
+    private const string WMinAlarmRuleKey = "WMinAlarmRuleKey";
+    public Task SetWMinAlarmRule(AlarmRule rule)
+    {
+        return UpsertSysConfig(
+            new SysConfig(WMinAlarmRuleKey, JsonSerializer.Serialize(rule)));
+    }
+    
+    public Task<AlarmRule?> GetWMinAlarmRule()
+    {
+        var defaultJson = JsonSerializer.Serialize(WMinAlarmRule.DefaultRule);
+        return GetSysConfig(WMinAlarmRuleKey, defaultJson)
+            .ContinueWith(ret=>JsonSerializer.Deserialize<AlarmRule>(ret.Result));
+    }
+    
+    private const string SHourAlarmRuleKey = "SHourAlarmRuleKey";
+    public Task SetSHourAlarmRule(AlarmRule rule)
+    {
+        return UpsertSysConfig(
+            new SysConfig(SHourAlarmRuleKey, JsonSerializer.Serialize(rule)));
+    }
+    
+    public Task<AlarmRule?> GetSHourAlarmRule()
+    {
+        var defaultJson = JsonSerializer.Serialize(SHourAlarmRule.DefaultRule);
+        return GetSysConfig(SHourAlarmRuleKey, defaultJson)
+            .ContinueWith(ret=>JsonSerializer.Deserialize<AlarmRule>(ret.Result));
+    }
+    
+    private const string CMinAlarmRuleKey = "CMinAlarmRuleKey";
+    public Task SetCMinAlarmRule(AlarmRule rule)
+    {
+        return UpsertSysConfig(
+            new SysConfig(CMinAlarmRuleKey, JsonSerializer.Serialize(rule)));
+    }
+    
+    public Task<AlarmRule?> GetCMinAlarmRule()
+    {
+        var defaultJson = JsonSerializer.Serialize(CMinAlarmRule.DefaultRule);
+        return GetSysConfig(CMinAlarmRuleKey, defaultJson)
+            .ContinueWith(ret=>JsonSerializer.Deserialize<AlarmRule>(ret.Result));
+    }
 }

@@ -2,7 +2,7 @@
 
 public static class WMinAlarmRule
 {
-    public static AlarmRule DefaultRule = new AlarmRule
+    public static readonly AlarmRule DefaultRule = new AlarmRule
     {
         Monitors = ["W001", "W002"],
         Rules =
