@@ -120,6 +120,7 @@ namespace DataMonitor2.Models
         {
             try
             {
+                logger.LogInformation("MonitorTask start");
                 var today = DateTime.Today;
                 Handler(await sysConfigIo.GetAMinAlarmRule(),
                     await recordIo.GetAMinRecords(today),
@@ -136,6 +137,7 @@ namespace DataMonitor2.Models
                 Handler(await sysConfigIo.GetSHourAlarmRule(),
                     await recordIo.GetSHourRecords(today),
                     sysConfigIo.GetSHourSkip, sysConfigIo.SetSHourSkip, CheckHourRecords);
+                logger.LogInformation("MonitorTask end");
             }
             catch (Exception ex)
             {
@@ -190,7 +192,7 @@ namespace DataMonitor2.Models
                         }, cancellationToken);
                     }
 
-                    _ = SimplePeriodicAction(MonitorTask, true, TimeSpan.FromMinutes(1), "MonitorTask");
+                    _ = SimplePeriodicAction(MonitorTask, true, TimeSpan.FromMinutes(3), "MonitorTask");
                 }
                 catch (Exception e)
                 {

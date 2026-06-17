@@ -16,6 +16,9 @@ Log.Logger = new LoggerConfiguration()
 builder.Logging.ClearProviders();
 builder.Logging.AddSerilog(dispose: true);
 
+// Set Dapper timeout
+Dapper.SqlMapper.Settings.CommandTimeout = 120;
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

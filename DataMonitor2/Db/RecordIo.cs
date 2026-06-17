@@ -39,7 +39,7 @@ public class RecordIo
         await using var connection = new SqlConnection(_sqlServer.ConnectionString);
         return await connection.QueryAsync<MonitorRecord>(
             $"SELECT * FROM A_AVGR{today.Year - 1911} " +
-            $"WHERE M_YEAR = {today.Year - 1911} AND M_MONTH = {today.Month} AND M_DAY = {today.Day}");
+            $"WHERE M_YEAR = {today.Year - 1911} AND M_MONTH = {today.Month} AND M_DAY = {today.Day} ORDER BY M_TIME ASC");
     }
 
     public async Task<IEnumerable<MonitorRecord>> GetWMinRecords(DateTime today)
