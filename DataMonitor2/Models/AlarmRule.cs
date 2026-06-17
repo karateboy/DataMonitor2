@@ -5,7 +5,8 @@ public class MonitorTypeRule(string item)
     public string Item {get; set;} = item;
     public double? AlarmLow {get; set;}
     public double? AlarmHigh {get; set;}
-    public double? AlarmHighHigh {get; set;}
+    public int? ConstantCount {get; set;}
+    public double? EfficiencyLowAlarm {get; set;} = 75;
 }
 
 

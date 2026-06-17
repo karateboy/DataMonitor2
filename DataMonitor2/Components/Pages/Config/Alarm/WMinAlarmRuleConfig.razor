@@ -1,6 +1,7 @@
 ﻿@using DataMonitor2.Db
 @using Syncfusion.Blazor.Grids
 @using Action = Syncfusion.Blazor.Grids.Action
+@using Syncfusion.Blazor.Buttons
 @using Models
 @inject ILogger<AMinAlarmRuleConfig> Logger
 @inject SysConfigIo SysConfigIo
@@ -9,6 +10,10 @@
 
 <PageTitle>@Title</PageTitle>
 <h3>監測測站: @MonitorNames</h3>
+<div class="m-1 p-1">
+    <SfCheckBox Checked="true" readonly="">通訊異常警報</SfCheckBox>
+    <SfCheckBox Checked="true" readonly="">上傳環保局警報</SfCheckBox>
+</div>
 <SfGrid @ref="Grid" DataSource="@_alarmRule.Rules" Toolbar="@(new List<string> { "Edit", "Update", "Cancel" })"
         ShowColumnMenu="true"
         AllowPaging="false" AllowSorting="true" AllowResizing="true">
@@ -38,19 +43,25 @@
             </EditTemplate>
         </GridColumn>
         <GridColumn Field="@nameof(MonitorTypeRule.AlarmLow)"
-                    HeaderText="低值警報"
+                    HeaderText="異常下限"
                     TextAlign="TextAlign.Left"
                     Width="15"
                     AllowEditing="true"
                     Visible="true"> </GridColumn>
         <GridColumn Field="@nameof(MonitorTypeRule.AlarmHigh)"
-                    HeaderText="高值警報"
+                    HeaderText="異常上限"
                     TextAlign="TextAlign.Left"
                     AllowEditing="true"
                     Width="15"
                     Visible="true"> </GridColumn>
-        <GridColumn Field="@nameof(MonitorTypeRule.AlarmHighHigh)"
-                    HeaderText="超高值警報"
+        <GridColumn Field="@nameof(MonitorTypeRule.ConstantCount)"
+                    HeaderText="定值筆數"
+                    TextAlign="TextAlign.Left"
+                    AllowEditing="true"
+                    Width="15"
+                    Visible="true"> </GridColumn>
+        <GridColumn Field="@nameof(MonitorTypeRule.EfficiencyLowAlarm)"
+                    HeaderText="有效率低限(%)"
                     TextAlign="TextAlign.Left"
                     AllowEditing="true"
                     Width="15"

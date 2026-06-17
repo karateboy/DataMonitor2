@@ -149,4 +149,21 @@ public class SysConfigIo
         return GetSysConfig(CMinAlarmRuleKey, defaultJson)
             .ContinueWith(ret=>JsonSerializer.Deserialize<AlarmRule>(ret.Result));
     }
+    
+    private const string AMinSkipKey = "AMinSkipKey";
+    public Task SetAMinSkip(int skip) => UpsertSysConfig(new SysConfig(AMinSkipKey, skip.ToString()));
+    public Task<int> GetAMinSkip()=>GetSysConfig(AMinSkipKey, "0").ContinueWith(ret=>int.Parse(ret.Result));
+    
+    private const string WMinSkipKey = "WMinSkipKey";
+    public Task SetWMinSkip(int skip) => UpsertSysConfig(new SysConfig(WMinSkipKey, skip.ToString()));
+    public Task<int> GetWMinSkip()=>GetSysConfig(WMinSkipKey, "0").ContinueWith(ret=>int.Parse(ret.Result));
+    
+    private const string CMinSkipKey = "CMinSkipKey";
+    public Task SetCMinSkip(int skip) => UpsertSysConfig(new SysConfig(CMinSkipKey, skip.ToString()));
+    public Task<int> GetCMinSkip()=>GetSysConfig(CMinSkipKey, "0").ContinueWith(ret=>int.Parse(ret.Result));
+
+    private const string SHourSkipKey = "SHourSkipKey";
+    public Task SetSHourSkip(int skip) => UpsertSysConfig(new SysConfig(SHourSkipKey, skip.ToString()));
+    public Task<int> GetSHourSkip()=>GetSysConfig(SHourSkipKey, "0").ContinueWith(ret=>int.Parse(ret.Result));
+
 }
