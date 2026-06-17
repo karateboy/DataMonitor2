@@ -2,9 +2,8 @@
 
 public static class WMinAlarmRule
 {
-    public static readonly AlarmRule DefaultRule = new AlarmRule
+    public static AlarmRule Factory(string monitor) => new(monitor)
     {
-        Monitors = ["W001", "W002"],
         Rules =
         [
             new MonitorTypeRule("W240"),

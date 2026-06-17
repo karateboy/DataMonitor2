@@ -17,7 +17,7 @@ public class SysConfigIo
         _logger = logger;
     }
 
-    
+
     public interface ISysConfig
     {
         string ConfigKey { get; init; }
@@ -55,10 +55,12 @@ public class SysConfigIo
         try
         {
             await using var connection = new SqlConnection(_sqlServer.ConnectionString);
-            var ret = connection.QueryFirstOrDefault<string>("SELECT Value  FROM [dbo].[SysConfig] WHERE ConfigKey = @ConfigKey",
+            var ret = connection.QueryFirstOrDefault<string>(
+                "SELECT Value  FROM [dbo].[SysConfig] WHERE ConfigKey = @ConfigKey",
                 new { ConfigKey = configKey });
             return ret ?? defaultValue;
-        }catch(Exception e)
+        }
+        catch (Exception e)
         {
             _logger.LogError(e, "GetSysConfig {ConfigKey}", configKey);
             throw;
@@ -70,100 +72,45 @@ public class SysConfigIo
         var ret = await GetSysConfig(configKey);
         return string.IsNullOrEmpty(ret) || bool.Parse(ret);
     }
+
     private const string EmailReceiptKey = "EmailReceiptKey";
+
     public Task SetEmailReceipt(string email)
     {
         return UpsertSysConfig(
             new SysConfig(EmailReceiptKey, email));
     }
-    
+
     public Task<string> GetEmailReceipt()
     {
         return GetSysConfig(EmailReceiptKey);
     }
-    
+
     private const string PhoneNoKey = "PhoneNoKey";
+
     public Task SetPhoneNo(string email)
     {
         return UpsertSysConfig(
             new SysConfig(PhoneNoKey, email));
     }
-    
+
     public Task<string> GetPhoneNo()
     {
         return GetSysConfig(PhoneNoKey);
     }
-    
-    private const string AMinAlarmRuleKey = "AMinAlarmRuleKey";
-    public Task SetAMinAlarmRule(AlarmRule rule)
-    {
-        return UpsertSysConfig(
-            new SysConfig(AMinAlarmRuleKey, JsonSerializer.Serialize(rule)));
-    }
-    
-    public Task<AlarmRule?> GetAMinAlarmRule()
-    {
-        var defaultJson = JsonSerializer.Serialize(AMinAlarmRule.DefaultRule);
-        return GetSysConfig(AMinAlarmRuleKey, defaultJson)
-            .ContinueWith(ret=>JsonSerializer.Deserialize<AlarmRule>(ret.Result));
-    }
-    
-    private const string WMinAlarmRuleKey = "WMinAlarmRuleKey";
-    public Task SetWMinAlarmRule(AlarmRule rule)
-    {
-        return UpsertSysConfig(
-            new SysConfig(WMinAlarmRuleKey, JsonSerializer.Serialize(rule)));
-    }
-    
-    public Task<AlarmRule?> GetWMinAlarmRule()
-    {
-        var defaultJson = JsonSerializer.Serialize(WMinAlarmRule.DefaultRule);
-        return GetSysConfig(WMinAlarmRuleKey, defaultJson)
-            .ContinueWith(ret=>JsonSerializer.Deserialize<AlarmRule>(ret.Result));
-    }
-    
-    private const string SHourAlarmRuleKey = "SHourAlarmRuleKey";
-    public Task SetSHourAlarmRule(AlarmRule rule)
-    {
-        return UpsertSysConfig(
-            new SysConfig(SHourAlarmRuleKey, JsonSerializer.Serialize(rule)));
-    }
-    
-    public Task<AlarmRule?> GetSHourAlarmRule()
-    {
-        var defaultJson = JsonSerializer.Serialize(SHourAlarmRule.DefaultRule);
-        return GetSysConfig(SHourAlarmRuleKey, defaultJson)
-            .ContinueWith(ret=>JsonSerializer.Deserialize<AlarmRule>(ret.Result));
-    }
-    
-    private const string CMinAlarmRuleKey = "CMinAlarmRuleKey";
-    public Task SetCMinAlarmRule(AlarmRule rule)
-    {
-        return UpsertSysConfig(
-            new SysConfig(CMinAlarmRuleKey, JsonSerializer.Serialize(rule)));
-    }
-    
-    public Task<AlarmRule?> GetCMinAlarmRule()
-    {
-        var defaultJson = JsonSerializer.Serialize(CMinAlarmRule.DefaultRule);
-        return GetSysConfig(CMinAlarmRuleKey, defaultJson)
-            .ContinueWith(ret=>JsonSerializer.Deserialize<AlarmRule>(ret.Result));
-    }
-    
-    private const string AMinSkipKey = "AMinSkipKey";
-    public Task SetAMinSkip(int skip) => UpsertSysConfig(new SysConfig(AMinSkipKey, skip.ToString()));
-    public Task<int> GetAMinSkip()=>GetSysConfig(AMinSkipKey, "0").ContinueWith(ret=>int.Parse(ret.Result));
-    
-    private const string WMinSkipKey = "WMinSkipKey";
-    public Task SetWMinSkip(int skip) => UpsertSysConfig(new SysConfig(WMinSkipKey, skip.ToString()));
-    public Task<int> GetWMinSkip()=>GetSysConfig(WMinSkipKey, "0").ContinueWith(ret=>int.Parse(ret.Result));
-    
-    private const string CMinSkipKey = "CMinSkipKey";
-    public Task SetCMinSkip(int skip) => UpsertSysConfig(new SysConfig(CMinSkipKey, skip.ToString()));
-    public Task<int> GetCMinSkip()=>GetSysConfig(CMinSkipKey, "0").ContinueWith(ret=>int.Parse(ret.Result));
 
-    private const string SHourSkipKey = "SHourSkipKey";
-    public Task SetSHourSkip(int skip) => UpsertSysConfig(new SysConfig(SHourSkipKey, skip.ToString()));
-    public Task<int> GetSHourSkip()=>GetSysConfig(SHourSkipKey, "0").ContinueWith(ret=>int.Parse(ret.Result));
+    public const string MonitorAlarmRulesKey = "MonitorAlarmRulesKey";
+    public Task SetMonitorAlarmRules(List<AlarmRule> rules) =>
+        UpsertSysConfig(new SysConfig(MonitorAlarmRulesKey, JsonSerializer.Serialize(rules)));
 
+    public Task<List<AlarmRule>> GetMonitorAlarmRules() =>
+        GetSysConfig(MonitorAlarmRulesKey, JsonSerializer.Serialize(MonitorAlarmRules.DefaultRules))
+            .ContinueWith(ret => JsonSerializer.Deserialize<List<AlarmRule>>(ret.Result))!;
+    
+    public const string MonitorSkipsKey = "MonitorSkipsKey";
+    public Task SetMonitorSkips(List<MonitorSkip> skips) =>
+        UpsertSysConfig(new SysConfig(MonitorSkipsKey, JsonSerializer.Serialize(skips)));
+    public Task<List<MonitorSkip>> GetMonitorSkips() =>
+        GetSysConfig(MonitorSkipsKey, JsonSerializer.Serialize(MonitorSkips.DefaultSkips))
+            .ContinueWith(ret => JsonSerializer.Deserialize<List<MonitorSkip>>(ret.Result))!;
 }

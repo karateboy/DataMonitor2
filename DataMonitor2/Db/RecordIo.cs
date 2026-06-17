@@ -34,35 +34,30 @@ public class RecordIo
             0);
     }
 
-    public async Task<IEnumerable<MonitorRecord>> GetAMinRecords(DateTime today)
+    public async Task<IEnumerable<MonitorRecord>> GetRecords(string monitor, DateTime today)
     {
-        await using var connection = new SqlConnection(_sqlServer.ConnectionString);
+        string GetTableName()
+        {
+            switch (monitor[0])
+            {
+                case 'A':
+                case 'W':
+                case 'C':
+                    return $"{monitor[0]}_AVGR{today.Year - 1911}";
+                case 'S':
+                    return $"{monitor[0]}_AVGHR{today.Year - 1911}";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(monitor), monitor, null);
+            }
+        }
+        
+        var tableName = GetTableName();
+        
+        await using var connection = new SqlConnection(_sqlServer.ConnectionString);    
         return await connection.QueryAsync<MonitorRecord>(
-            $"SELECT * FROM A_AVGR{today.Year - 1911} " +
-            $"WHERE M_YEAR = {today.Year - 1911} AND M_MONTH = {today.Month} AND M_DAY = {today.Day} ORDER BY M_TIME ASC");
-    }
-
-    public async Task<IEnumerable<MonitorRecord>> GetWMinRecords(DateTime today)
-    {
-        await using var connection = new SqlConnection(_sqlServer.ConnectionString);
-        return await connection.QueryAsync<MonitorRecord>(
-            $"SELECT * FROM W_AVGR{today.Year - 1911} " +
-            $"WHERE M_YEAR = {today.Year - 1911} AND M_MONTH = {today.Month} AND M_DAY = {today.Day} ORDER BY M_TIME ASC");
-    }
-
-    public async Task<IEnumerable<MonitorRecord>> GetSHourRecords(DateTime today)
-    {
-        await using var connection = new SqlConnection(_sqlServer.ConnectionString);
-        return await connection.QueryAsync<MonitorRecord>(
-            $"SELECT * FROM S_AVGHR{today.Year - 1911} " +
-            $"WHERE M_YEAR = {today.Year - 1911} AND M_MONTH = {today.Month} AND M_DAY = {today.Day} ORDER BY M_TIME ASC");
-    }
-
-    public async Task<IEnumerable<MonitorRecord>> GetCMinRecords(DateTime today)
-    {
-        await using var connection = new SqlConnection(_sqlServer.ConnectionString);
-        return await connection.QueryAsync<MonitorRecord>(
-            $"SELECT * FROM C_AVGR{today.Year - 1911} " +
-            $"WHERE M_YEAR = {today.Year - 1911} AND M_MONTH = {today.Month} AND M_DAY = {today.Day} ORDER BY M_TIME ASC");
+            $"SELECT * FROM {tableName} " +
+            $"WHERE DP_NO = '{monitor}' AND M_YEAR = {today.Year - 1911} " +
+            $"AND M_MONTH = {today.Month} AND M_DAY = {today.Day} " +
+            $"ORDER BY M_TIME ASC");        
     }
 }

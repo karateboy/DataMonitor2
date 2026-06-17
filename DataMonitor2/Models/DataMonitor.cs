@@ -31,12 +31,10 @@ namespace DataMonitor2.Models
             
             
             var toCheck = records.Skip(realSkip).ToList();
-            logger.LogInformation($"Checking {toCheck.Count}");
+            logger.LogInformation($"Record to be checked ({toCheck.Count})");
             
             foreach (var record in toCheck)
             {
-                if (!rule.Monitors.Contains(record.DP_NO))
-                    continue;
                 var monitorTypeRule = rule.Rules.Find(mtRule => mtRule.Item == record.ITEM);
                 if (monitorTypeRule == null)
                     continue;
@@ -51,7 +49,6 @@ namespace DataMonitor2.Models
             }
 
             // Check constant
-            foreach (var monitor in rule.Monitors)
             {
                 foreach (var mtRule in rule.Rules)
                 {
@@ -60,8 +57,8 @@ namespace DataMonitor2.Models
                         continue;
 
                     var filtered = 
-                        records.Where(record => 
-                            record.DP_NO == monitor && record.ITEM == mtRule.Item).Reverse().ToList();
+                        records.Where(record => record.ITEM == mtRule.Item).Reverse().ToList();
+                    
                     if (filtered.Capacity == 0)
                         continue;
 
@@ -74,7 +71,7 @@ namespace DataMonitor2.Models
                     {
                         var head = checkSeq[0];
                         
-                        sb.Append($"{head.GetDateTime():g} {monitor} {monitorTypeIo.MapReadOnly[mtRule.Item].Desp.Trim()} 定值\n");
+                        sb.Append($"{head.GetDateTime():g} {rule.Monitor} {monitorTypeIo.MapReadOnly[mtRule.Item].Desp.Trim()} 定值\n");
                     }
                         
                 }
@@ -82,33 +79,27 @@ namespace DataMonitor2.Models
 
             return sb.ToString().TrimEnd();
         }
-
-
-        delegate Task<int> SkipGetter();
-
-        delegate Task SkipSetter(int skip);
-
+        
         delegate string RecordChecker(List<RecordIo.MonitorRecord> records, AlarmRule rule, int skip);
 
-        async void Handler(AlarmRule? alarmRule,
+        private async void Handler(string monitor,
             IEnumerable<RecordIo.MonitorRecord> enumerableRecord,
-            SkipGetter skipGetter,
-            SkipSetter skipSetter,
             RecordChecker checker)
         {
             try
             {
-                if (alarmRule == null) return;
+                var alarmRule = MonitorAlarmRules.MonitorAlarmRuleMap[monitor];
                 var records = enumerableRecord.ToList();
-                var skip = await skipGetter();
-                var alarmMessage = checker(records, alarmRule, skip);
+                var monitorSkip = MonitorSkips.MonitorSkipMap[monitor];
+                var alarmMessage = checker(records, alarmRule, monitorSkip.Skip);
                 if (!string.IsNullOrEmpty(alarmMessage))
                 {
                     await alarmIo.AddAlarm(AlarmIo.AlarmLevel.Error, alarmMessage);
                     await lineNotify.Notify(alarmMessage);
                 }
-                    
-                await skipSetter(records.Count);
+
+                var newSkip = monitorSkip with { Skip = records.Count };
+                MonitorSkips.UpdateSkip(newSkip, sysConfigIo);
             }
             catch (Exception ex)
             {
@@ -121,23 +112,15 @@ namespace DataMonitor2.Models
             try
             {
                 logger.LogInformation("MonitorTask start");
-                var today = DateTime.Today;
-                Handler(await sysConfigIo.GetAMinAlarmRule(),
-                    await recordIo.GetAMinRecords(today),
-                    sysConfigIo.GetAMinSkip, sysConfigIo.SetAMinSkip, CheckMinRecords);
-
-                Handler(await sysConfigIo.GetWMinAlarmRule(),
-                    await recordIo.GetWMinRecords(today),
-                    sysConfigIo.GetWMinSkip, sysConfigIo.SetWMinSkip, CheckMinRecords);
-
-                Handler(await sysConfigIo.GetCMinAlarmRule(),
-                    await recordIo.GetCMinRecords(today),
-                    sysConfigIo.GetCMinSkip, sysConfigIo.SetCMinSkip, CheckMinRecords);
-
-                Handler(await sysConfigIo.GetSHourAlarmRule(),
-                    await recordIo.GetSHourRecords(today),
-                    sysConfigIo.GetSHourSkip, sysConfigIo.SetSHourSkip, CheckHourRecords);
-                logger.LogInformation("MonitorTask end");
+                var today = DateTime.Today.Subtract(TimeSpan.FromDays(10));
+                foreach (var monitor in MonitorAlarmRules.Monitors)
+                {
+                    logger.LogInformation("Checking Monitor {MonitorName}", monitor);
+                    if(monitor.StartsWith('S'))
+                        Handler(monitor, await recordIo.GetRecords(monitor, today), CheckMinRecords);
+                    else
+                        Handler(monitor, await recordIo.GetRecords(monitor, today), CheckHourRecords);
+                }
             }
             catch (Exception ex)
             {
@@ -145,66 +128,59 @@ namespace DataMonitor2.Models
             }
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
             try
             {
                 // Init
-                monitorTypeIo.Init().Wait(cancellationToken);
+                await monitorTypeIo.Init();
+                MonitorAlarmRules.Init(await sysConfigIo.GetMonitorAlarmRules());
+                MonitorSkips.Init(await sysConfigIo.GetMonitorSkips());
                 _ = alarmIo.AddAlarm(AlarmIo.AlarmLevel.Info, "開始監測");
-                try
-                {
-                    // Helper function
-                    Task SimplePeriodicAction(Action<bool> action, bool param, TimeSpan ts, string actionName)
-                    {
-                        var primaryTask = Task.Run(async () =>
-                        {
-                            try
-                            {
-                                if (!cancellationToken.IsCancellationRequested)
-                                {
-                                    action(param);
-                                    using PeriodicTimer periodicTimer = new(ts);
-                                    while (await periodicTimer.WaitForNextTickAsync(cancellationToken)
-                                               .ConfigureAwait(false))
-                                    {
-                                        action(param);
-                                    }
-
-                                    logger.LogInformation("{ActionName} is stopped", actionName);
-                                }
-                                else
-                                {
-                                    logger.LogInformation("DataCollectManager is cancelled before started");
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                logger.LogError(ex, "{ActionName} is failed", actionName);
-                            }
-                        }, cancellationToken);
-                        return primaryTask.ContinueWith(task =>
-                        {
-                            Helper.CheckTask(task, logger, $"SimplePeriodicAction {actionName} failed", actionName);
-                            if (cancellationToken.IsCancellationRequested) return;
-                            logger.LogInformation("Try to restart {ActionName}", actionName);
-                            SimplePeriodicAction(action, param, ts, actionName);
-                        }, cancellationToken);
-                    }
-
-                    _ = SimplePeriodicAction(MonitorTask, true, TimeSpan.FromMinutes(3), "MonitorTask");
-                }
-                catch (Exception e)
-                {
-                    logger.LogError(e, "DataCollectManager StartAsync error");
-                    throw;
-                }
-
-                return Task.CompletedTask;
+                _ = SimplePeriodicAction(MonitorTask, true, TimeSpan.FromMinutes(3), "MonitorTask");
             }
-            catch (Exception exception)
+            catch (Exception ex)
             {
-                return Task.FromException(exception);
+                logger.LogError(ex, "DataMonitor StartAsync error");
+            }
+
+            return;
+
+            Task SimplePeriodicAction(Action<bool> action, bool param, TimeSpan ts, string actionName)
+            {
+                var primaryTask = Task.Run(async () =>
+                {
+                    try
+                    {
+                        if (!cancellationToken.IsCancellationRequested)
+                        {
+                            action(param);
+                            using PeriodicTimer periodicTimer = new(ts);
+                            while (await periodicTimer.WaitForNextTickAsync(cancellationToken)
+                                       .ConfigureAwait(false))
+                            {
+                                action(param);
+                            }
+
+                            logger.LogInformation("{ActionName} is stopped", actionName);
+                        }
+                        else
+                        {
+                            logger.LogInformation("DataCollectManager is cancelled before started");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "{ActionName} is failed", actionName);
+                    }
+                }, cancellationToken);
+                return primaryTask.ContinueWith(task =>
+                {
+                    Helper.CheckTask(task, logger, $"SimplePeriodicAction {actionName} failed", actionName);
+                    if (cancellationToken.IsCancellationRequested) return;
+                    logger.LogInformation("Try to restart {ActionName}", actionName);
+                    SimplePeriodicAction(action, param, ts, actionName);
+                }, cancellationToken);
             }
         }
 

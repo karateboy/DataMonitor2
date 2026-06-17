@@ -2,9 +2,8 @@
 
 public static class SHourAlarmRule
 {
-    public static AlarmRule DefaultRule = new AlarmRule
+    public static AlarmRule Factory(string monitor) => new AlarmRule(monitor)
     {
-        Monitors = ["S001", "S002", "S003"],
         Rules =
         [
             new MonitorTypeRule("S220"),

@@ -1,4 +1,5 @@
 ﻿@page "/Config/Alarm"
+@using DataMonitor2.Models
 @using Syncfusion.Blazor.Navigations
 @rendermode InteractiveServer
 
@@ -8,46 +9,21 @@
         <TabAnimationNext Effect=AnimationEffect.FadeZoomIn></TabAnimationNext>
     </TabAnimationSettings>
     <TabItems>
-        <TabItem>
-            <ChildContent>
-                <TabHeader Text="A分鐘資料警報" IconCss="e-icons e-location"></TabHeader>
-            </ChildContent>
-            <ContentTemplate>
-                <div class="m-3">
-                    <AMinAlarmRuleConfig></AMinAlarmRuleConfig>
-                </div>
-            </ContentTemplate>
-        </TabItem>
-        <TabItem>
-            <ChildContent>
-                <TabHeader Text="W分鐘資料警報" IconCss="e-icons e-location"></TabHeader>
-            </ChildContent>
-            <ContentTemplate>
-                <div class="m-3">
-                    <WMinAlarmRuleConfig></WMinAlarmRuleConfig>
-                </div>
-            </ContentTemplate>
-        </TabItem>
-        <TabItem>
-            <ChildContent>
-                <TabHeader Text="S小時資料警報" IconCss="e-icons e-location"></TabHeader>
-            </ChildContent>
-            <ContentTemplate>
-                <div class="m-3">
-                    <SHourAlarmRuleConfig></SHourAlarmRuleConfig>
-                </div>
-            </ContentTemplate>
-        </TabItem>
-        <TabItem>
-            <ChildContent>
-                <TabHeader Text="C分鐘資料警報" IconCss="e-icons e-location"></TabHeader>
-            </ChildContent>
-            <ContentTemplate>
-                <div class="m-3">
-                    <CMinAlarmRuleConfig></CMinAlarmRuleConfig>
-                </div>
-            </ContentTemplate>
-        </TabItem>
+        @{
+            foreach (var monitor in MonitorAlarmRules.Monitors)
+            {
+                <TabItem>
+                    <ChildContent>
+                        <TabHeader Text="@monitor" IconCss="e-icons e-location"></TabHeader>
+                    </ChildContent>
+                    <ContentTemplate>
+                        <div class="m-3">
+                            <AlarmRuleConfig Monitor="@monitor"></AlarmRuleConfig>
+                        </div>
+                    </ContentTemplate>
+                </TabItem>       
+            }
+        }
     </TabItems>
 </SfTab>
 
