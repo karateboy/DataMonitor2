@@ -180,9 +180,9 @@ namespace DataMonitor2.Models
                 logger.LogInformation("檢查{Monitor} {Yesterday}有效率", monitor, date);
                 var records = (await recordIo.GetRecords(monitor, date)).ToList();
                 var alarmRule = MonitorAlarmRules.MonitorAlarmRuleMap[monitor];
-                foreach (var monitorTypeRule in alarmRule.Rules)
+                foreach (var mtRule in alarmRule.Rules)
                 {
-                    var efficiencyLowAlarm = monitorTypeRule.EfficiencyLowAlarm.GetValueOrDefault(0);
+                    var efficiencyLowAlarm = mtRule.EfficiencyLowAlarm.GetValueOrDefault(0);
 
                     if (efficiencyLowAlarm == 0)
                         continue;
@@ -193,11 +193,11 @@ namespace DataMonitor2.Models
                     else
                         total = 24 * 60 * 60;
 
-                    double recordCount = records.Count(record => record.ITEM == monitorTypeRule.Item);
+                    double recordCount = records.Count(record => record.ITEM == mtRule.Item);
                     var effectiveRate = recordCount / total * 100;
                     if (effectiveRate > efficiencyLowAlarm) continue;
 
-                    var message = $"測站{monitor} {date:g} 有效率低限警報 ({effectiveRate:F2}%)";
+                    var message = $"測站{monitor} {date:g} {monitorTypeIo.MapReadOnly[mtRule.Item].Desp.Trim()}有效率低限警報 ({effectiveRate:F2}%)";
                     await alarmIo.AddAlarm(AlarmIo.AlarmLevel.Error, message);
                     await lineNotify.Notify(message);
                 }
