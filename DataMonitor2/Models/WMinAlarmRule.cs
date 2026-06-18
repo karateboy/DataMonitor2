@@ -6,6 +6,8 @@ public static class WMinAlarmRule
     {
         Rules =
         [
+            new MonitorTypeRule("W210"),
+            new MonitorTypeRule("W211"),
             new MonitorTypeRule("W240"),
             new MonitorTypeRule("W241"),
             new MonitorTypeRule("W242"),

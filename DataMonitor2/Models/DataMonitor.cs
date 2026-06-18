@@ -1,17 +1,80 @@
 ﻿using System.Diagnostics;
 using System.Text;
+using DataMonitor2.Data;
 using DataMonitor2.Db;
+using Microsoft.AspNetCore.Identity;
 
 namespace DataMonitor2.Models
 {
+    
     internal sealed class DataMonitor(
         ILogger<DataMonitor> logger,
         MonitorTypeIo monitorTypeIo,
         SysConfigIo sysConfigIo,
         RecordIo recordIo,
         ILineNotify lineNotify,
-        AlarmIo alarmIo) : IHostedService
+        AlarmIo alarmIo,
+        IServiceScopeFactory scopeFactory
+        ) : IHostedService
     {
+        private async Task InitRoles()
+        {
+            var roles = new List<string> { Role.Admin, Role.Operator, Role.User };
+            using var scope = scopeFactory.CreateScope();
+            var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+            foreach (var role in roles)
+            {
+                if (!await roleManager.RoleExistsAsync(role))
+                {
+                    await roleManager.CreateAsync(new IdentityRole(role));
+                }
+            }
+        }
+
+        private record UserProfile(string Username, string Password, string Email, string Role);
+
+        private async Task CreateDefaultUsers()
+        {
+            var users = new List<UserProfile>
+            {
+                new("admin@atlas", "admin", "admin@atlas", Role.Admin),
+                new("operator@atlas", "operator", "operator@atlas", Role.Operator),
+                new("user@atlas", "user", "user@atlas", Role.User)
+            };
+            using var scope = scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            foreach (var profile in users)
+            {
+                var user = await userManager.FindByNameAsync(profile.Username);
+
+                if (user == null)
+                {
+                    user = new ApplicationUser
+                    {
+                        UserName = profile.Username,
+                        Email = profile.Email
+                    };
+                    var ret = await userManager.CreateAsync(user, profile.Password);
+                    if (!ret.Succeeded)
+                    {
+                        logger.LogError("Create user {Username} failed, {Errors}",
+                            profile.Username, ret.Errors.Select(x => x.Description));
+                        continue;
+                    }
+
+                    await userManager.AddToRoleAsync(user, profile.Role);
+                }
+
+                var confirmed = await userManager.IsEmailConfirmedAsync(user);
+                if (confirmed == false)
+                {
+                    logger.LogInformation("Confirm email for {Username}", profile.Username);
+                    var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+                    await userManager.ConfirmEmailAsync(user, token);
+                }
+            }
+        }
+        
         private string CheckMinRecords(List<RecordIo.MonitorRecord> records, AlarmRule rule, int skip)
             => CheckRecords(records, rule, skip, true);
 
@@ -138,6 +201,8 @@ namespace DataMonitor2.Models
             try
             {
                 // Init
+                await InitRoles();
+                await CreateDefaultUsers();
                 await monitorTypeIo.Init();
                 MonitorAlarmRules.Init(await sysConfigIo.GetMonitorAlarmRules());
                 MonitorSkips.Init(await sysConfigIo.GetMonitorSkips());

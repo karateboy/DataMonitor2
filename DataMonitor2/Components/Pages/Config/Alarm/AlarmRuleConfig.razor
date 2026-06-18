@@ -1,4 +1,5 @@
-﻿@using DataMonitor2.Db
+﻿@using System.Security.Claims
+@using DataMonitor2.Db
 @using Syncfusion.Blazor.Grids
 @using Action = Syncfusion.Blazor.Grids.Action
 @using Syncfusion.Blazor.Buttons
@@ -19,7 +20,7 @@
 <SfGrid @ref="Grid" DataSource="@_alarmRule?.Rules" Toolbar="@(new List<string> { "Edit", "Update", "Cancel" })"
         ShowColumnMenu="true"
         AllowPaging="false" AllowSorting="true" AllowResizing="true">
-    <GridEditSettings Mode="EditMode.Normal" AllowAdding="false" AllowDeleting="false" AllowEditing="true"></GridEditSettings>
+    <GridEditSettings Mode="EditMode.Normal" AllowAdding="false" AllowDeleting="false" AllowEditing="CanEdit"></GridEditSettings>
     <GridColumns>
         <GridColumn Field="@nameof(MonitorTypeRule.Item)"
                     HeaderText="測項"
@@ -78,12 +79,25 @@
     [Parameter] 
     public string Monitor { get; set; }
     
+    [CascadingParameter] private Task<AuthenticationState>? AuthenticationState { get; set; }
+    
     private SfGrid<MonitorTypeRule> Grid;
     private AlarmRule? _alarmRule;
-    
-    protected override void OnParametersSet()
+
+    bool CanEdit;
+    protected override async Task OnParametersSetAsync()
     {
         _alarmRule = MonitorAlarmRules.MonitorAlarmRuleMap[Monitor];
+        if (AuthenticationState is not null)
+        {
+            var authState = await AuthenticationState;
+            var user = authState.User;
+            if (user.IsInRole(Role.Admin))
+            {
+                CanEdit = true;
+            }
+            Logger.LogInformation("User is {IsAdmin} Admin", CanEdit);
+        }
     }
 
     private async void OnActionComplete(ActionEventArgs<MonitorTypeRule> args)

@@ -18,11 +18,7 @@ public static class AMinAlarmRule
                 new MonitorTypeRule("A286"),
                 new MonitorTypeRule("A289"),
                 new MonitorTypeRule("A293"),
-                new MonitorTypeRule("A296"),
-                new MonitorTypeRule("A923"),
-                new MonitorTypeRule("A924"),
-                new MonitorTypeRule("A925"),
-                new MonitorTypeRule("A926")
+                new MonitorTypeRule("A296")
             ]
         };
 }

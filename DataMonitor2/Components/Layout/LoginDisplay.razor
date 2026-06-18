@@ -1,0 +1,23 @@
+﻿@using Syncfusion.Blazor.Buttons
+<AuthorizeView>
+    <Authorized>
+        <div class="m-2 clearfix">
+            <h5 class="text-light float-start">
+                <a href="/Account/Manage">@context.User.Identity?.Name</a>&nbsp;您好
+            </h5>
+            <form method="post" action="/Account/Logout" class="float-end">
+                <AntiforgeryToken></AntiforgeryToken>
+                <input type="hidden" name="returnUrl" value="">
+                <SfButton IconCss="oi oi-account-logout" type="submit">登出</SfButton>
+            </form>
+        </div>
+
+    </Authorized>
+    <NotAuthorized>
+        <div class="ps-1">
+            <h4 class="text-light">
+                <a href="/Account/Login"><SfButton IconCss="oi oi-account-login">登入</SfButton></a>
+            </h4>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
