@@ -1,8 +1,10 @@
 ﻿@using System.ComponentModel.DataAnnotations
 @using DataMonitor2.Db
+@using DataMonitor2.Models
 @using Syncfusion.Blazor.Notifications
 @inject SysConfigIo SysConfigIo
 @inject ILogger<SysConfigTab> Logger
+@inject IEmailService EmailService
 @rendermode InteractiveServer
 
 <PageTitle>@Title</PageTitle>
@@ -18,6 +20,9 @@
         <div class="col-md-5">
             <InputText Id="Name" class="form-control" @bind-Value="_model!.Email"/>
             <ValidationMessage For="@(() => _model!.Email)"/>
+        </div>
+        <div class="col-md-1">
+            <button type="button" class="btn btn-info" @onclick="TestEmail">測試</button>
         </div>
     </div>
     <div class="row mb-3">
@@ -77,4 +82,26 @@
             });
     }
 
+    private async Task TestEmail()
+    {
+        Logger.LogInformation("TestLine called: Testing the line token");
+        try
+        {
+            await EmailService.SendEmailAsync(_model!.Email, "測試信件", "<b>這是測試信件</b>");
+            await ToastObj!.ShowAsync(new ToastModel
+            {
+                CssClass = "e-toast-success",
+                Content = "測試成功"
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "TestLine: Failed to send test message");
+            await ToastObj!.ShowAsync(new ToastModel
+            {
+                CssClass = "e-toast-danger",
+                Content = "測試失敗"
+            });
+        }
+    }
 }
