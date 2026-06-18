@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Identity;
 
 namespace DataMonitor2.Models
 {
-    
     internal sealed class DataMonitor(
         ILogger<DataMonitor> logger,
         MonitorTypeIo monitorTypeIo,
@@ -15,7 +14,7 @@ namespace DataMonitor2.Models
         ILineNotify lineNotify,
         AlarmIo alarmIo,
         IServiceScopeFactory scopeFactory
-        ) : IHostedService
+    ) : IHostedService
     {
         private async Task InitRoles()
         {
@@ -74,7 +73,7 @@ namespace DataMonitor2.Models
                 }
             }
         }
-        
+
         private string CheckMinRecords(List<RecordIo.MonitorRecord> records, AlarmRule rule, int skip)
             => CheckRecords(records, rule, skip, true);
 
@@ -94,7 +93,7 @@ namespace DataMonitor2.Models
 
             if (todayRecords.Count == 0)
                 return sb.ToString().TrimEnd();
-            
+
             var toCheck = todayRecords.Skip(realSkip).ToList();
             logger.LogInformation($"{toCheck.Count} records to be checked.");
 
@@ -174,21 +173,67 @@ namespace DataMonitor2.Models
             }
         }
 
+        private async Task CheckEffectiveRate(string monitor, DateTime date)
+        {
+            try
+            {
+                logger.LogInformation("檢查{Monitor} {Yesterday}有效率", monitor, date);
+                var records = (await recordIo.GetRecords(monitor, date)).ToList();
+                var alarmRule = MonitorAlarmRules.MonitorAlarmRuleMap[monitor];
+                foreach (var monitorTypeRule in alarmRule.Rules)
+                {
+                    var efficiencyLowAlarm = monitorTypeRule.EfficiencyLowAlarm.GetValueOrDefault(0);
+
+                    if (efficiencyLowAlarm == 0)
+                        continue;
+                    
+                    double total;
+                    if (monitor.StartsWith('S'))
+                        total = 12;
+                    else
+                        total = 24 * 60 * 60;
+
+                    double recordCount = records.Count(record => record.ITEM == monitorTypeRule.Item);
+                    var effectiveRate = recordCount / total * 100;
+                    if (effectiveRate > efficiencyLowAlarm) continue;
+
+                    var message = $"測站{monitor} {date:g} 有效率低限警報 ({effectiveRate:F2}%)";
+                    await alarmIo.AddAlarm(AlarmIo.AlarmLevel.Error, message);
+                    await lineNotify.Notify(message);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "CheckEffectiveRate failed");
+            }
+        }
+
+        private DateTime _lastCheckTime;
+
         private async void MonitorTask(bool param1)
         {
             try
             {
                 logger.LogInformation("MonitorTask start");
-                
+
                 var today = DateTime.Today;
                 foreach (var monitor in MonitorAlarmRules.Monitors)
                 {
-                    logger.LogInformation("Checking Monitor {MonitorName}", monitor);
+                    logger.LogInformation("檢查測站{MonitorName}", monitor);
                     if (monitor.StartsWith('S'))
                         Handler(monitor, await recordIo.GetRecords(monitor, today), CheckHourRecords);
                     else
                         Handler(monitor, await recordIo.GetRecords(monitor, today), CheckMinRecords);
                 }
+
+                if (_lastCheckTime.Date != today.Date)
+                {
+                    var yesterday = today.Date.AddDays(-1);
+                    foreach (var monitor in MonitorAlarmRules.Monitors)
+                        await CheckEffectiveRate(monitor, yesterday);
+                }
+
+                _lastCheckTime = DateTime.Now;
             }
             catch (Exception ex)
             {
@@ -207,6 +252,7 @@ namespace DataMonitor2.Models
                 MonitorAlarmRules.Init(await sysConfigIo.GetMonitorAlarmRules());
                 MonitorSkips.Init(await sysConfigIo.GetMonitorSkips());
                 _ = alarmIo.AddAlarm(AlarmIo.AlarmLevel.Info, "開始監測");
+                _lastCheckTime = DateTime.Now;
                 _ = SimplePeriodicAction(MonitorTask, true, TimeSpan.FromMinutes(10), "MonitorTask");
             }
             catch (Exception ex)
