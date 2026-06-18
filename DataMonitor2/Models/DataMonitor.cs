@@ -29,9 +29,11 @@ namespace DataMonitor2.Models
                 realSkip = 0;
             }
 
-
+            if (todayRecords.Count == 0)
+                return sb.ToString().TrimEnd();
+            
             var toCheck = todayRecords.Skip(realSkip).ToList();
-            logger.LogInformation($"Record to be checked ({toCheck.Count})");
+            logger.LogInformation($"{toCheck.Count} records to be checked.");
 
             foreach (var record in toCheck)
             {
@@ -80,7 +82,6 @@ namespace DataMonitor2.Models
                         $"{head.GetDateTime():g} {rule.Monitor} {monitorTypeIo.MapReadOnly[mtRule.Item].Desp.Trim()} 定值\n");
                 }
             }
-
 
             return sb.ToString().TrimEnd();
         }
