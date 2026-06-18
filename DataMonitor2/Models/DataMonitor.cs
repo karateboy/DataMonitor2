@@ -52,8 +52,8 @@ namespace DataMonitor2.Models
 
             // Check Time delay only for minData
             var latestRecord = todayRecords.Last();
-            if (minData && latestRecord.GetDateTime().AddMinutes(10) < DateTime.Now)
-                sb.Append($"測站{monitor} 通信異常 (超過10分鐘無資料)");
+            if (minData && latestRecord.GetDateTime().AddMinutes(30) < DateTime.Now)
+                sb.Append($"測站{monitor} 通信異常 (超過30分鐘無資料)");
 
             // Check constant
             foreach (var mtRule in rule.Rules)
@@ -141,7 +141,7 @@ namespace DataMonitor2.Models
                 MonitorAlarmRules.Init(await sysConfigIo.GetMonitorAlarmRules());
                 MonitorSkips.Init(await sysConfigIo.GetMonitorSkips());
                 _ = alarmIo.AddAlarm(AlarmIo.AlarmLevel.Info, "開始監測");
-                _ = SimplePeriodicAction(MonitorTask, true, TimeSpan.FromMinutes(3), "MonitorTask");
+                _ = SimplePeriodicAction(MonitorTask, true, TimeSpan.FromMinutes(10), "MonitorTask");
             }
             catch (Exception ex)
             {

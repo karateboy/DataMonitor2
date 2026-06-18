@@ -56,7 +56,7 @@ public class RecordIo
         await using var connection = new SqlConnection(_sqlServer.ConnectionString);    
         return await connection.QueryAsync<MonitorRecord>(
             $"SELECT * FROM {tableName} " +
-            $"WHERE DP_NO = '{monitor}' AND M_YEAR = {today.Year - 1911} " +
+            $"WHERE DP_NO = '{monitor}' " +
             $"AND M_MONTH = {today.Month} AND M_DAY = {today.Day} " +
             $"ORDER BY M_TIME ASC");        
     }
