@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics;
+using System.Text;
 using DataMonitor2.Db;
 
 namespace DataMonitor2.Models
@@ -9,10 +10,8 @@ namespace DataMonitor2.Models
         SysConfigIo sysConfigIo,
         RecordIo recordIo,
         ILineNotify lineNotify,
-        AlarmIo alarmIo,
-        IHostEnvironment env) : IHostedService
+        AlarmIo alarmIo) : IHostedService
     {
-
         private string CheckMinRecords(List<RecordIo.MonitorRecord> records, AlarmRule rule, int skip)
             => CheckRecords(records, rule, skip, true);
 
@@ -20,19 +19,20 @@ namespace DataMonitor2.Models
         private string CheckHourRecords(List<RecordIo.MonitorRecord> records, AlarmRule rule, int skip)
             => CheckRecords(records, rule, skip, false);
 
-        private string CheckRecords(List<RecordIo.MonitorRecord> records, AlarmRule rule, int skip, bool minData)
+        private string CheckRecords(List<RecordIo.MonitorRecord> todayRecords, AlarmRule rule, int skip, bool minData)
         {
+            var monitor = rule.Monitor;
             StringBuilder sb = new();
             var realSkip = skip;
-            if (records.Count < skip)
+            if (todayRecords.Count < skip)
             {
                 realSkip = 0;
             }
-            
-            
-            var toCheck = records.Skip(realSkip).ToList();
+
+
+            var toCheck = todayRecords.Skip(realSkip).ToList();
             logger.LogInformation($"Record to be checked ({toCheck.Count})");
-            
+
             foreach (var record in toCheck)
             {
                 var monitorTypeRule = rule.Rules.Find(mtRule => mtRule.Item == record.ITEM);
@@ -43,43 +43,48 @@ namespace DataMonitor2.Models
                     continue;
 
                 if ((double)record.M_Val > monitorTypeRule.AlarmHigh.GetValueOrDefault(double.MaxValue))
-                    sb.Append($"{record.GetDateTime():g} 測站{record.DP_NO} {monitorTypeIo.MapReadOnly[record.ITEM].Desp.Trim()} {record.M_Val} 超上限 {monitorTypeRule.AlarmHigh}\n");
+                    sb.Append(
+                        $"{record.GetDateTime():g} 測站{record.DP_NO} {monitorTypeIo.MapReadOnly[record.ITEM].Desp.Trim()} {record.M_Val} 超上限 {monitorTypeRule.AlarmHigh}\n");
                 else if ((double)record.M_Val < monitorTypeRule.AlarmLow.GetValueOrDefault(double.MinValue))
-                    sb.Append($"{record.GetDateTime():g} 測站{record.DP_NO} {monitorTypeIo.MapReadOnly[record.ITEM].Desp.Trim()} {record.M_Val} 超下限 {monitorTypeRule.AlarmLow}\n");
+                    sb.Append(
+                        $"{record.GetDateTime():g} 測站{record.DP_NO} {monitorTypeIo.MapReadOnly[record.ITEM].Desp.Trim()} {record.M_Val} 超下限 {monitorTypeRule.AlarmLow}\n");
             }
 
+            // Check Time delay only for minData
+            var latestRecord = todayRecords.Last();
+            if (minData && latestRecord.GetDateTime().AddMinutes(10) < DateTime.Now)
+                sb.Append($"測站{monitor} 通信異常 (超過10分鐘無資料)");
+
             // Check constant
+            foreach (var mtRule in rule.Rules)
             {
-                foreach (var mtRule in rule.Rules)
+                var constantCount = mtRule.ConstantCount.GetValueOrDefault(0);
+                if (constantCount == 0)
+                    continue;
+
+                var filtered =
+                    todayRecords.Where(record => record.ITEM == mtRule.Item).Reverse().ToList();
+
+                if (filtered.Capacity == 0)
+                    continue;
+
+                var checkSeq = filtered.Take(constantCount).ToList();
+                if (checkSeq.Count < constantCount)
+                    continue;
+
+                var head = checkSeq.First();
+                var allSame = checkSeq.All(x => x.M_Val == head.M_Val);
+                if (allSame)
                 {
-                    var constantCount = mtRule.ConstantCount.GetValueOrDefault(0);
-                    if (constantCount == 0)
-                        continue;
-
-                    var filtered = 
-                        records.Where(record => record.ITEM == mtRule.Item).Reverse().ToList();
-                    
-                    if (filtered.Capacity == 0)
-                        continue;
-
-                    var checkSeq = filtered.Take(constantCount).ToList();
-                    if (checkSeq.Count < constantCount)
-                        continue;
-
-                    var allSame = checkSeq.Count == 0 || checkSeq.All(x => x.Equals(checkSeq[0]));
-                    if (allSame)
-                    {
-                        var head = checkSeq[0];
-                        
-                        sb.Append($"{head.GetDateTime():g} {rule.Monitor} {monitorTypeIo.MapReadOnly[mtRule.Item].Desp.Trim()} 定值\n");
-                    }
-                        
+                    sb.Append(
+                        $"{head.GetDateTime():g} {rule.Monitor} {monitorTypeIo.MapReadOnly[mtRule.Item].Desp.Trim()} 定值\n");
                 }
             }
 
+
             return sb.ToString().TrimEnd();
         }
-        
+
         delegate string RecordChecker(List<RecordIo.MonitorRecord> records, AlarmRule rule, int skip);
 
         private async void Handler(string monitor,
@@ -92,14 +97,12 @@ namespace DataMonitor2.Models
                 var records = enumerableRecord.ToList();
                 var monitorSkip = MonitorSkips.MonitorSkipMap[monitor];
                 var alarmMessage = checker(records, alarmRule, monitorSkip.Skip);
-                if (!string.IsNullOrEmpty(alarmMessage))
-                {
-                    await alarmIo.AddAlarm(AlarmIo.AlarmLevel.Error, alarmMessage);
-                    await lineNotify.Notify(alarmMessage);
-                }
-
                 var newSkip = monitorSkip with { Skip = records.Count };
                 MonitorSkips.UpdateSkip(newSkip, sysConfigIo);
+                if (string.IsNullOrEmpty(alarmMessage)) return;
+
+                await alarmIo.AddAlarm(AlarmIo.AlarmLevel.Error, alarmMessage);
+                await lineNotify.Notify(alarmMessage);
             }
             catch (Exception ex)
             {
@@ -112,14 +115,15 @@ namespace DataMonitor2.Models
             try
             {
                 logger.LogInformation("MonitorTask start");
-                var today = DateTime.Today.Subtract(TimeSpan.FromDays(10));
+                
+                var today = DateTime.Today;
                 foreach (var monitor in MonitorAlarmRules.Monitors)
                 {
                     logger.LogInformation("Checking Monitor {MonitorName}", monitor);
-                    if(monitor.StartsWith('S'))
-                        Handler(monitor, await recordIo.GetRecords(monitor, today), CheckMinRecords);
-                    else
+                    if (monitor.StartsWith('S'))
                         Handler(monitor, await recordIo.GetRecords(monitor, today), CheckHourRecords);
+                    else
+                        Handler(monitor, await recordIo.GetRecords(monitor, today), CheckMinRecords);
                 }
             }
             catch (Exception ex)
