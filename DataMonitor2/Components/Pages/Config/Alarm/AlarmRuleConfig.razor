@@ -13,14 +13,19 @@
 
 <h3>監測測站: @Monitor</h3>
 <div class="m-1 p-1">
-    <SfCheckBox Checked="true" readonly="">通訊異常警報</SfCheckBox>
+    @if (_canEdit)
+    {
+        <SfCheckBox @bind-Checked="@_alarmRule!.CheckCommunication" 
+                    ValueChange="ValueChange" 
+                    TChecked="bool" >通訊異常警報</SfCheckBox>    
+    }
     <SfCheckBox Checked="true" readonly="">上傳環保局警報</SfCheckBox>
 </div>
 
 <SfGrid @ref="Grid" DataSource="@_alarmRule?.Rules" Toolbar="@(new List<string> { "Edit", "Update", "Cancel" })"
         ShowColumnMenu="true"
         AllowPaging="false" AllowSorting="true" AllowResizing="true">
-    <GridEditSettings Mode="EditMode.Normal" AllowAdding="false" AllowDeleting="false" AllowEditing="CanEdit"></GridEditSettings>
+    <GridEditSettings Mode="EditMode.Normal" AllowAdding="false" AllowDeleting="false" AllowEditing="_canEdit"></GridEditSettings>
     <GridColumns>
         <GridColumn Field="@nameof(MonitorTypeRule.Item)"
                     HeaderText="測項"
@@ -84,7 +89,7 @@
     private SfGrid<MonitorTypeRule> Grid;
     private AlarmRule? _alarmRule;
 
-    bool CanEdit;
+    bool _canEdit;
     protected override async Task OnParametersSetAsync()
     {
         _alarmRule = MonitorAlarmRules.MonitorAlarmRuleMap[Monitor];
@@ -94,13 +99,17 @@
             var user = authState.User;
             if (user.IsInRole(Role.Admin))
             {
-                CanEdit = true;
+                _canEdit = true;
             }
-            Logger.LogInformation("User is {IsAdmin} Admin", CanEdit);
         }
     }
 
-    private async void OnActionComplete(ActionEventArgs<MonitorTypeRule> args)
+    private void ValueChange(Syncfusion.Blazor.Buttons.ChangeEventArgs<bool> args)
+    {
+        MonitorAlarmRules.UpdateAlarmRule(_alarmRule!, SysConfigIo);
+    }
+    
+    private void OnActionComplete(ActionEventArgs<MonitorTypeRule> args)
     {
         try
         {

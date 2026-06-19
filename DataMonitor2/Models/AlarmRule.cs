@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using DataMonitor2.Db;
+using Serilog;
 
 namespace DataMonitor2.Models;
 
@@ -17,6 +18,8 @@ public class AlarmRule(string monitor)
 {
     public string Monitor { get; set; } = monitor;
     public required List<MonitorTypeRule> Rules { get; set; }
+    
+    public bool CheckCommunication { get; set; }
 }
 
 public static class MonitorAlarmRules

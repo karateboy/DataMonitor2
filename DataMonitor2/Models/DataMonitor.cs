@@ -95,7 +95,7 @@ namespace DataMonitor2.Models
                 return sb.ToString().TrimEnd();
 
             var toCheck = todayRecords.Skip(realSkip).ToList();
-            logger.LogInformation($"{toCheck.Count} records to be checked.");
+            logger.LogDebug("{ToCheckCount} records to be checked.", toCheck.Count);
 
             foreach (var record in toCheck)
             {
@@ -115,10 +115,13 @@ namespace DataMonitor2.Models
             }
 
             // Check Time delay only for minData
-            var latestRecord = todayRecords.Last();
-            if (minData && latestRecord.GetDateTime().AddMinutes(30) < DateTime.Now)
-                sb.Append($"測站{monitor} 通信異常 (超過30分鐘無資料)");
-
+            if (rule.CheckCommunication)
+            {
+                var latestRecord = todayRecords.Last();
+                if (minData && latestRecord.GetDateTime().AddMinutes(30) < DateTime.Now)
+                    sb.Append($"測站{monitor} 通信異常 (超過30分鐘無資料)");
+            }
+            
             // Check constant
             foreach (var mtRule in rule.Rules)
             {
@@ -148,7 +151,7 @@ namespace DataMonitor2.Models
             return sb.ToString().TrimEnd();
         }
 
-        delegate string RecordChecker(List<RecordIo.MonitorRecord> records, AlarmRule rule, int skip);
+        private delegate string RecordChecker(List<RecordIo.MonitorRecord> records, AlarmRule rule, int skip);
 
         private async void Handler(string monitor,
             IEnumerable<RecordIo.MonitorRecord> enumerableRecord,
@@ -214,7 +217,7 @@ namespace DataMonitor2.Models
         {
             try
             {
-                logger.LogInformation("MonitorTask start");
+                logger.LogInformation("開始檢查=>");
 
                 var today = DateTime.Today;
                 foreach (var monitor in MonitorAlarmRules.Monitors)
@@ -253,7 +256,7 @@ namespace DataMonitor2.Models
                 MonitorSkips.Init(await sysConfigIo.GetMonitorSkips());
                 _ = alarmIo.AddAlarm(AlarmIo.AlarmLevel.Info, "開始監測");
                 _lastCheckTime = DateTime.Now;
-                _ = SimplePeriodicAction(MonitorTask, true, TimeSpan.FromMinutes(10), "MonitorTask");
+                _ = SimplePeriodicAction(MonitorTask, true, TimeSpan.FromMinutes(5), "MonitorTask");
             }
             catch (Exception ex)
             {
