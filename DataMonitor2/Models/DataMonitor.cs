@@ -200,7 +200,7 @@ namespace DataMonitor2.Models
                     var effectiveRate = recordCount / total * 100;
                     if (effectiveRate > efficiencyLowAlarm) continue;
 
-                    var message = $"測站{monitor} {date:g} {monitorTypeIo.MapReadOnly[mtRule.Item].Desp.Trim()}有效率低限警報 ({effectiveRate:F2}%)";
+                    var message = $"測站{monitor} {date:d} {monitorTypeIo.MapReadOnly[mtRule.Item].Desp.Trim()}有效率低限警報 ({effectiveRate:F2}%)";
                     await alarmIo.AddAlarm(AlarmIo.AlarmLevel.Error, message);
                     await lineNotify.Notify(message);
                 }
