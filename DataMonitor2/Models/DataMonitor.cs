@@ -194,7 +194,7 @@ namespace DataMonitor2.Models
                     if (monitor.StartsWith('S'))
                         total = 12;
                     else
-                        total = 24 * 60 * 60;
+                        total = 24 * 60;
 
                     double recordCount = records.Count(record => record.ITEM == mtRule.Item);
                     var effectiveRate = recordCount / total * 100;
