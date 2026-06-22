@@ -84,7 +84,7 @@
 
     private async Task TestEmail()
     {
-        Logger.LogInformation("TestLine called: Testing the line token");
+        Logger.LogInformation("Test email!");
         try
         {
             await EmailService.SendEmailAsync(_model!.Email, "測試信件", "<b>這是測試信件</b>");

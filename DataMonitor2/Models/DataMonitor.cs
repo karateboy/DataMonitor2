@@ -303,6 +303,10 @@ namespace DataMonitor2.Models
             }
         }
 
-        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task StopAsync(CancellationToken cancellationToken) 
+        {
+            _ = alarmIo.AddAlarm(AlarmIo.AlarmLevel.Info, "停止監測");
+            return Task.Delay(1000, cancellationToken);
+        }
     }
 }

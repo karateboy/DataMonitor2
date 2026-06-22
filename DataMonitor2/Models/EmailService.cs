@@ -9,10 +9,10 @@ public interface IEmailService
     Task SendEmailAsync(string to, string subject, string body);
 }
 
-public class EmailService(IOptions<EmailSettings> settings) : IEmailService
+public class EmailService(IOptions<EmailSettings> settings, ILogger<EmailService> logger) : IEmailService
 {
     private readonly EmailSettings _settings = settings.Value;
-
+    
     public async Task SendEmailAsync(string to, string subject, string body)
     {
         using var client = new SmtpClient(_settings.SmtpServer, _settings.Port);

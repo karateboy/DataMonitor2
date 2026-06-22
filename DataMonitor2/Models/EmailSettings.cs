@@ -9,4 +9,13 @@ public class EmailSettings
     public string SenderEmail { get; set; }
     public string Username { get; set; }
     public string Password { get; set; }
+
+    public override string ToString() => 
+        $"SmtpServer: {SmtpServer}" +
+        $"Port: {Port}, " +
+        $"EnableSsl: {EnableSsl}, " +
+        $"SenderName: {SenderName}, " +
+        $"SenderEmail: {SenderEmail}" +
+        $"Password: {Password}";
+
 }
