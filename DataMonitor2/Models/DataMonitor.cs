@@ -193,6 +193,8 @@ namespace DataMonitor2.Models
                     double total;
                     if (monitor.StartsWith('S'))
                         total = 12;
+                    else if (monitor.StartsWith('W')||monitor.StartsWith('C'))
+                        total = 24 * 12;
                     else
                         total = 24 * 60;
 
