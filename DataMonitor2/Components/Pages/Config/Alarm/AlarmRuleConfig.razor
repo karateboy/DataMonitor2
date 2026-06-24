@@ -13,19 +13,36 @@
 
 <h3>監測測站: @Monitor</h3>
 <div class="m-1 p-1">
-    @if (_canEdit)
-    {
-        <SfCheckBox @bind-Checked="@_alarmRule!.CheckCommunication" 
-                    ValueChange="ValueChange" 
-                    TChecked="bool" >通訊異常警報</SfCheckBox>    
-    }
-    <SfCheckBox Checked="true" readonly="">上傳環保局警報</SfCheckBox>
+    <ul>
+        @if (_canEdit)
+        {
+            <li>
+                <SfCheckBox @bind-Checked="@_alarmRule!.CheckCommunication"
+                            ValueChange="ValueChange"
+                            TChecked="bool">通訊異常警報
+                </SfCheckBox>
+                <span>&nbsp;</span>
+            </li>
+            
+            <li>
+                <SfCheckBox @bind-Checked="@_alarmRule!.CheckMonitorTypeRules"
+                            ValueChange="ValueChange"
+                            TChecked="bool">數值異常警報
+                </SfCheckBox>
+            </li>
+        }
+        <li>
+            <SfCheckBox Checked="true" readonly="">上傳環保局警報</SfCheckBox>
+        </li>
+    </ul>
+
 </div>
 
 <SfGrid @ref="Grid" DataSource="@_alarmRule?.Rules" Toolbar="@(new List<string> { "Edit", "Update", "Cancel" })"
         ShowColumnMenu="true"
         AllowPaging="false" AllowSorting="true" AllowResizing="true">
-    <GridEditSettings Mode="EditMode.Normal" AllowAdding="false" AllowDeleting="false" AllowEditing="_canEdit"></GridEditSettings>
+    <GridEditSettings Mode="EditMode.Normal" AllowAdding="false" AllowDeleting="false"
+                      AllowEditing="_canEdit"></GridEditSettings>
     <GridColumns>
         <GridColumn Field="@nameof(MonitorTypeRule.Item)"
                     HeaderText="測項"
@@ -38,14 +55,14 @@
             <Template>
                 @if (context is MonitorTypeRule rule)
                 {
-                    var mtItem = MonitorTypeIo.MapReadOnly[rule.Item]; 
+                    var mtItem = MonitorTypeIo.MapReadOnly[rule.Item];
                     <strong>@mtItem.Desp.Trim()</strong>
                 }
             </Template>
             <EditTemplate>
                 @if (context is MonitorTypeRule rule)
                 {
-                    var mtItem = MonitorTypeIo.MapReadOnly[rule.Item]; 
+                    var mtItem = MonitorTypeIo.MapReadOnly[rule.Item];
                     <strong>@mtItem.Desp.Trim()</strong>
                 }
             </EditTemplate>
@@ -55,25 +72,25 @@
                     TextAlign="TextAlign.Left"
                     Width="15"
                     AllowEditing="true"
-                    Visible="true"> </GridColumn>
+                    Visible="true"></GridColumn>
         <GridColumn Field="@nameof(MonitorTypeRule.AlarmHigh)"
                     HeaderText="異常上限"
                     TextAlign="TextAlign.Left"
                     AllowEditing="true"
                     Width="15"
-                    Visible="true"> </GridColumn>
+                    Visible="true"></GridColumn>
         <GridColumn Field="@nameof(MonitorTypeRule.ConstantCount)"
                     HeaderText="定值筆數"
                     TextAlign="TextAlign.Left"
                     AllowEditing="true"
                     Width="15"
-                    Visible="true"> </GridColumn>
+                    Visible="true"></GridColumn>
         <GridColumn Field="@nameof(MonitorTypeRule.EfficiencyLowAlarm)"
                     HeaderText="有效率低限(%)"
                     TextAlign="TextAlign.Left"
                     AllowEditing="true"
                     Width="15"
-                    Visible="true"> </GridColumn>
+                    Visible="true"></GridColumn>
     </GridColumns>
     <GridEvents OnActionComplete="OnActionComplete" TValue="MonitorTypeRule"></GridEvents>
 </SfGrid>
@@ -81,15 +98,15 @@
 
 @code {
 
-    [Parameter] 
-    public string Monitor { get; set; }
-    
+    [Parameter] public string Monitor { get; set; }
+
     [CascadingParameter] private Task<AuthenticationState>? AuthenticationState { get; set; }
-    
+
     private SfGrid<MonitorTypeRule> Grid;
     private AlarmRule? _alarmRule;
 
     bool _canEdit;
+
     protected override async Task OnParametersSetAsync()
     {
         _alarmRule = MonitorAlarmRules.MonitorAlarmRuleMap[Monitor];
@@ -108,12 +125,12 @@
     {
         MonitorAlarmRules.UpdateAlarmRule(_alarmRule!, SysConfigIo);
     }
-    
+
     private void OnActionComplete(ActionEventArgs<MonitorTypeRule> args)
     {
         try
         {
-            if (args.RequestType != Action.Save) 
+            if (args.RequestType != Action.Save)
                 return;
 
             var updatedRule = _alarmRule!.Rules.Find(rule => rule.Item == args.Data?.Item);
@@ -127,4 +144,5 @@
             Logger.LogError(e.ToString());
         }
     }
+
 }

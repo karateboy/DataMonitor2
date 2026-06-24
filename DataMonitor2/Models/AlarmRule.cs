@@ -11,6 +11,10 @@ public class MonitorTypeRule(string item)
     public double? AlarmHigh {get; set;}
     public int? ConstantCount {get; set;}
     public double? EfficiencyLowAlarm {get; set;} = 75;
+    
+    public bool AlarmRaised {get; set;} = false;
+    public bool Notified {get; set;} = false;
+    public DateTime NotificationTime {get; set;} = DateTime.MinValue;
 }
 
 
@@ -20,6 +24,8 @@ public class AlarmRule(string monitor)
     public required List<MonitorTypeRule> Rules { get; set; }
     
     public bool CheckCommunication { get; set; }
+
+    public bool CheckMonitorTypeRules { get; set; } = true;
 }
 
 public static class MonitorAlarmRules

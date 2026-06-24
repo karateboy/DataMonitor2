@@ -97,22 +97,23 @@ namespace DataMonitor2.Models
             var toCheck = todayRecords.Skip(realSkip).ToList();
             logger.LogDebug("{ToCheckCount} records to be checked.", toCheck.Count);
 
-            foreach (var record in toCheck)
-            {
-                var monitorTypeRule = rule.Rules.Find(mtRule => mtRule.Item == record.ITEM);
-                if (monitorTypeRule == null)
-                    continue;
+            if (rule.CheckMonitorTypeRules)
+                foreach (var record in toCheck)
+                {
+                    var monitorTypeRule = rule.Rules.Find(mtRule => mtRule.Item == record.ITEM);
+                    if (monitorTypeRule == null)
+                        continue;
 
-                if (record.Code2 != "010")
-                    continue;
+                    if (record.Code2 != "010")
+                        continue;
 
-                if ((double)record.M_Val > monitorTypeRule.AlarmHigh.GetValueOrDefault(double.MaxValue))
-                    sb.Append(
-                        $"{record.GetDateTime():g} 測站{record.DP_NO} {monitorTypeIo.MapReadOnly[record.ITEM].Desp.Trim()} {record.M_Val} 超上限 {monitorTypeRule.AlarmHigh}\n");
-                else if ((double)record.M_Val < monitorTypeRule.AlarmLow.GetValueOrDefault(double.MinValue))
-                    sb.Append(
-                        $"{record.GetDateTime():g} 測站{record.DP_NO} {monitorTypeIo.MapReadOnly[record.ITEM].Desp.Trim()} {record.M_Val} 超下限 {monitorTypeRule.AlarmLow}\n");
-            }
+                    if ((double)record.M_Val > monitorTypeRule.AlarmHigh.GetValueOrDefault(double.MaxValue))
+                        sb.Append(
+                            $"{record.GetDateTime():g} 測站{record.DP_NO} {monitorTypeIo.MapReadOnly[record.ITEM].Desp.Trim()} {record.M_Val} 超上限 {monitorTypeRule.AlarmHigh}\n");
+                    else if ((double)record.M_Val < monitorTypeRule.AlarmLow.GetValueOrDefault(double.MinValue))
+                        sb.Append(
+                            $"{record.GetDateTime():g} 測站{record.DP_NO} {monitorTypeIo.MapReadOnly[record.ITEM].Desp.Trim()} {record.M_Val} 超下限 {monitorTypeRule.AlarmLow}\n");
+                }
 
             // Check Time delay only for minData
             if (rule.CheckCommunication)
@@ -121,7 +122,7 @@ namespace DataMonitor2.Models
                 if (minData && latestRecord.GetDateTime().AddMinutes(30) < DateTime.Now)
                     sb.Append($"測站{monitor} 通信異常 (超過30分鐘無資料)");
             }
-            
+
             // Check constant
             foreach (var mtRule in rule.Rules)
             {
@@ -189,11 +190,11 @@ namespace DataMonitor2.Models
 
                     if (efficiencyLowAlarm == 0)
                         continue;
-                    
+
                     double total;
                     if (monitor.StartsWith('S'))
                         total = 12;
-                    else if (monitor.StartsWith('W')||monitor.StartsWith('C'))
+                    else if (monitor.StartsWith('W') || monitor.StartsWith('C'))
                         total = 24 * 12;
                     else
                         total = 24 * 60;
@@ -202,7 +203,8 @@ namespace DataMonitor2.Models
                     var effectiveRate = recordCount / total * 100;
                     if (effectiveRate > efficiencyLowAlarm) continue;
 
-                    var message = $"測站{monitor} {date:d} {monitorTypeIo.MapReadOnly[mtRule.Item].Desp.Trim()}有效率低限警報 ({effectiveRate:F2}%)";
+                    var message =
+                        $"測站{monitor} {date:d} {monitorTypeIo.MapReadOnly[mtRule.Item].Desp.Trim()}有效率低限警報 ({effectiveRate:F2}%)";
                     await alarmIo.AddAlarm(AlarmIo.AlarmLevel.Error, message);
                     await lineNotify.Notify(message);
                 }
@@ -305,7 +307,7 @@ namespace DataMonitor2.Models
             }
         }
 
-        public Task StopAsync(CancellationToken cancellationToken) 
+        public Task StopAsync(CancellationToken cancellationToken)
         {
             _ = alarmIo.AddAlarm(AlarmIo.AlarmLevel.Info, "停止監測");
             return Task.Delay(1000, cancellationToken);
