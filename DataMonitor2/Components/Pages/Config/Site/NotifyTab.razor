@@ -30,9 +30,8 @@
         public string LineToken { get; set; } = string.Empty;
     }
 
-    private Model _model = new();
+    private readonly Model _model = new();
     private SfToast ToastObj;
-    private string ToastPosition = "Center";
 
     protected override async Task OnInitializedAsync()
     {

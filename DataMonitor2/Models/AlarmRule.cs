@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using DataMonitor2.Db;
-using Serilog;
 
 namespace DataMonitor2.Models;
 
@@ -12,16 +11,34 @@ public class MonitorTypeRule(string item)
     public int? ConstantCount {get; set;}
     public double? EfficiencyLowAlarm {get; set;} = 75;
     
-    public bool AlarmRaised {get; set;} = false;
-    public bool Notified {get; set;} = false;
-    public DateTime NotificationTime {get; set;} = DateTime.MinValue;
+    public bool AlarmRaised {get; set;}
+    private bool Notified {get; set;}
+    private DateTime NotificationTime {get; set;} = DateTime.MinValue;
+
+    public bool SkipAlarm()
+    {
+        if(NotificationTime.AddHours(2)>DateTime.Now)
+            return AlarmRaised && Notified;
+        
+        Notified = false;
+        return false;
+    } 
+    
+    public void AckNotification()
+    {
+        Notified = true;
+        NotificationTime = DateTime.Now;
+    }
+
+    public bool NotificationNeeded() => AlarmRaised && !SkipAlarm();
+
 }
 
 
 public class AlarmRule(string monitor)
 {
     public string Monitor { get; set; } = monitor;
-    public required List<MonitorTypeRule> Rules { get; set; }
+    public required List<MonitorTypeRule> Rules { get; init; }
     
     public bool CheckCommunication { get; set; }
 

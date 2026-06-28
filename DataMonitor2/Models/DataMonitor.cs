@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Text;
+﻿using System.Text;
 using DataMonitor2.Data;
 using DataMonitor2.Db;
 using Microsoft.AspNetCore.Identity;
@@ -106,13 +105,24 @@ namespace DataMonitor2.Models
 
                     if (record.Code2 != "010")
                         continue;
+                    if (monitorTypeRule.SkipAlarm()) continue;
 
                     if ((double)record.M_Val > monitorTypeRule.AlarmHigh.GetValueOrDefault(double.MaxValue))
+                    {
+                        monitorTypeRule.AlarmRaised = true;
                         sb.Append(
                             $"{record.GetDateTime():g} 測站{record.DP_NO} {monitorTypeIo.MapReadOnly[record.ITEM].Desp.Trim()} {record.M_Val} 超上限 {monitorTypeRule.AlarmHigh}\n");
+                    }
                     else if ((double)record.M_Val < monitorTypeRule.AlarmLow.GetValueOrDefault(double.MinValue))
+                    {
+                        monitorTypeRule.AlarmRaised = true;
                         sb.Append(
                             $"{record.GetDateTime():g} 測站{record.DP_NO} {monitorTypeIo.MapReadOnly[record.ITEM].Desp.Trim()} {record.M_Val} 超下限 {monitorTypeRule.AlarmLow}\n");
+                    }
+                    else
+                    {
+                        monitorTypeRule.AlarmRaised = false;
+                    }
                 }
 
             // Check Time delay only for minData
@@ -166,6 +176,9 @@ namespace DataMonitor2.Models
                 var alarmMessage = checker(records, alarmRule, monitorSkip.Skip);
                 var newSkip = monitorSkip with { Skip = records.Count };
                 MonitorSkips.UpdateSkip(newSkip, sysConfigIo);
+                
+                // sync rule changes
+                MonitorAlarmRules.UpdateAlarmRule(alarmRule, sysConfigIo);
                 if (string.IsNullOrEmpty(alarmMessage)) return;
 
                 await alarmIo.AddAlarm(AlarmIo.AlarmLevel.Error, alarmMessage);
@@ -241,6 +254,12 @@ namespace DataMonitor2.Models
                 }
 
                 _lastCheckTime = DateTime.Now;
+                foreach (var monitor in MonitorAlarmRules.Monitors)
+                {
+                    var alarmRule = MonitorAlarmRules.MonitorAlarmRuleMap[monitor];
+                    var count = alarmRule.Rules.Count(mtRule => mtRule.AlarmRaised);
+                    logger.LogInformation($"{monitor} alarm raised count: {count}");
+                }
             }
             catch (Exception ex)
             {

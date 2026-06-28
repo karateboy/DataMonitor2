@@ -9,7 +9,7 @@ public interface IEmailService
     Task SendEmailAsync(string to, string subject, string body);
 }
 
-public class EmailService(IOptions<EmailSettings> settings, ILogger<EmailService> logger) : IEmailService
+public class EmailService(IOptions<EmailSettings> settings) : IEmailService
 {
     private readonly EmailSettings _settings = settings.Value;
     

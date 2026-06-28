@@ -2,13 +2,13 @@ namespace DataMonitor2.Models;
 
 public class EmailSettings
 {
-    public string SmtpServer { get; set; }
+    public required string SmtpServer { get; set; }
     public int Port { get; set; }
     public bool EnableSsl { get; set; }
-    public string SenderName { get; set; }
-    public string SenderEmail { get; set; }
-    public string Username { get; set; }
-    public string Password { get; set; }
+    public required string SenderName { get; set; }
+    public required string SenderEmail { get; set; }
+    public required string Username { get; set; }
+    public required string Password { get; set; }
 
     public override string ToString() => 
         $"SmtpServer: {SmtpServer}" +
