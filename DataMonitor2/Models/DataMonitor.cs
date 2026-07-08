@@ -103,8 +103,10 @@ namespace DataMonitor2.Models
                     if (monitorTypeRule == null)
                         continue;
 
-                    if (record.Code2 != "010")
+                    string[] checkCodes = ["010", "011"];
+                    if (!checkCodes.Contains(record.Code2))
                         continue;
+                    
                     if (monitorTypeRule.SkipAlarm()) continue;
 
                     if ((double)record.M_Val > monitorTypeRule.AlarmHigh.GetValueOrDefault(double.MaxValue))
