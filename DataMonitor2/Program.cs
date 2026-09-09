@@ -87,7 +87,7 @@ builder.Services.AddTransient<IEmailService, EmailService>();
 var app = builder.Build();
 //Register Syncfusion license https://help.syncfusion.com/common/essential-studio/licensing/how-to-generate
 Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(
-    "Ngo9BigBOggjHTQxAR8/V1JHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdlWXlfdHRSR2VcV0JyX0VWYEo=");
+    "Ngo9BigBOggjHTQxAR8/V1JAaF5cX2pCd1p/TH5YfUNzdUVEY1ZUTXxaS1ZhSXxVdkxjUH9bcnVQR2ldVUJ9XEY=");
 
 // Configure the HTTP request pipeline.
 app.UseRequestLocalization(localizationOptions);
