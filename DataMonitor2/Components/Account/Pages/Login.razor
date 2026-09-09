@@ -1,6 +1,7 @@
 @page "/Account/Login"
 
 @using System.ComponentModel.DataAnnotations
+@using DataMonitor2.Db
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
 
@@ -9,23 +10,23 @@
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject AlarmIo AlarmIo
 
-<PageTitle>Log in</PageTitle>
+<PageTitle>登入</PageTitle>
 
-<h1>Log in</h1>
+<h1>登入</h1>
 <div class="row">
     <div class="col-lg-6">
         <section>
             <StatusMessage Message="@errorMessage" />
             <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login">
                 <DataAnnotationsValidator />
-                <h2>使用者登入</h2>
                 <hr />
                 <ValidationSummary class="text-danger" role="alert" />
                 <div class="form-floating mb-3">
-                    <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username webauthn" aria-required="true" placeholder="name@example.com" />
-                    <label for="Input.Email" class="form-label">Email</label>
-                    <ValidationMessage For="() => Input.Email" class="text-danger" />
+                    <InputText @bind-Value="Input.Name" id="Input.Name" class="form-control" autocomplete="username webauthn" aria-required="true" placeholder="name@example.com" />
+                    <label for="Input.Name" class="form-label">使用者名稱</label>
+                    <ValidationMessage For="() => Input.Name" class="text-danger" />
                 </div>
                 <div class="form-floating mb-3">
                     <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
@@ -41,6 +42,23 @@
                 <div>
                     <button type="submit" class="w-100 btn btn-lg btn-primary">登入</button>
                 </div>
+                <hr />
+                @* <div class="d-flex flex-column">
+                    <span class="text-secondary mx-auto mt-2">OR</span>
+                    <PasskeySubmit Operation="PasskeyOperation.Request" Name="Input.Passkey" EmailName="Input.Email" class="btn btn-link mx-auto">Log in with a passkey</PasskeySubmit>
+                </div>
+                <hr />
+                <div>
+                    <p>
+                        <a href="Account/ForgotPassword">Forgot your password?</a>
+                    </p>
+                    <p>
+                        <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Register as a new user</a>
+                    </p>
+                    <p>
+                        <a href="Account/ResendEmailConfirmation">Resend email confirmation</a>
+                    </p>
+                </div> *@
             </EditForm>
         </section>
     </div>
@@ -96,12 +114,12 @@
 
             // This doesn't count login failures towards account lockout
             // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-            result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+            result = await SignInManager.PasswordSignInAsync(Input.Name, Input.Password, Input.RememberMe, lockoutOnFailure: false);
         }
 
         if (result.Succeeded)
         {
-            Logger.LogInformation("User logged in.");
+            await AlarmIo.AddAlarm(AlarmIo.AlarmLevel.Info, $"使用者{Input.Name} 登入成功");
             RedirectManager.RedirectTo(ReturnUrl);
         }
         else if (result.RequiresTwoFactor)
@@ -124,8 +142,7 @@
     private sealed class InputModel
     {
         [Required]
-        [EmailAddress]
-        public string Email { get; set; } = "";
+        public string Name { get; set; } = "";
 
         [Required]
         [DataType(DataType.Password)]

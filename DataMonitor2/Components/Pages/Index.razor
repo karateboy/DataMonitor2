@@ -4,7 +4,8 @@
 @using Syncfusion.Blazor.Buttons
 @inject SysConfigIo SysConfigIo
 @inject MonitorTypeIo MonitorTypeIo
-@inject ILogger<Index> Logger
+@inject AlarmIo AlarmIo
+@MonitorTypeIo MonitorTypeIo
 @rendermode InteractiveServer
 
 <PageTitle>Index</PageTitle>
@@ -29,7 +30,8 @@
 
     void HandleRuleAck(AlarmRule rule, MonitorTypeRule mtRule)
     {
-        Logger.LogInformation("HandleRuleAck");
+        var mt = MonitorTypeIo.MapReadOnly[mtRule.Item];
+        _ = AlarmIo.AddAlarm(AlarmIo.AlarmLevel.Info, $"使用者確認了{mt.Desp}警報 ");
         mtRule.AckNotification();
         MonitorAlarmRules.UpdateAlarmRule(rule, SysConfigIo);
     }
